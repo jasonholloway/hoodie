@@ -1,90 +1,48 @@
-﻿using System.Collections.Generic;
-
-namespace probs
+﻿namespace probs
 {
     using static Ops;
 
     public static class Ops
     {
-        public static void Relate(IAtom atom1, IAtom atom2)
-        {
+        public static void Assert(Atom<bool> atom) {}
 
-        }
-        
-        public static Atom<T> Atom<T>(T val)
-            => new Atom<T>(val);
+        public static Atom<bool> In<T>(this Atom<T> atom, params T[] vals) => default;
+
+        public static Atom<bool> Therefore(this Atom atom, Atom other) => default;
     }
 
-    
-    public interface IAtom {}
-    
-    public struct Atom<T> : IAtom
+    public abstract class Atom
     {
-        public readonly T Value;
-
-        public Atom(T value)
-        {
-            Value = value;
-        }
+        public static Atom<bool> operator &(Atom me, Atom other) => default;
+        public static Atom<bool> operator ^(Atom me, Atom other) => default;
     }
 
-    //but atoms aren't independent! they're little handles of possibility
-
-    public abstract class Data
+    public class Atom<T> : Atom
     {
-        public ISet<Atom<string>> CountryCodes = new HashSet<Atom<string>>
-        {
-            Atom("UK"),
-            Atom("GB"),
-            Atom("IE"),
-            Atom("DE"),
-            Atom("AU")
-        };
-
-        public ISet<Atom<string>> Carriers = new HashSet<Atom<string>>
-        {
-            Atom("AUSPO"),
-            Atom("UPS"),
-            Atom("HERMES"),
-            Atom("TNT")
-        };
+        public static Atom<bool> operator ==(Atom<T> me, T val) => default;
+        public static Atom<bool> operator !=(Atom<T> me, T val) => default;
     }
-    
-    
     
     internal class Program
     {
         public static void Main(string[] args)
         {
-            var consignment = new Consignment
-            {
-                From = new Address(),
-                To = new Address(),
-                Carrier = new CarrierRef("blah")
-            };
-        }
-    }
+            var env = new Atom<string>();
+            Assert(env.In("F1", "F2", "PreProd"));
 
-    
-    public class Consignment
-    {
-        public Address From { get; set; }
-        public Address To { get; set; }
-        public CarrierRef Carrier { get; set; }
-    }
+            var country = new Atom<string>();
+            Assert(country.In("UK", "GB", "US", "DE", "AU"));
 
-    public class Address
-    {
-        public string CountryCode { get; set; }
-    }
-
-    public struct CarrierRef
-    {
-        public readonly string Reference;
-
-        public CarrierRef(string reference)
-        {
-            Reference = reference;
+            var carrier = new Atom<string>();
+            Assert(carrier.In("AUSPO", "UPS", "HERMES", "TNT"));
+            
+            
+            Assert((country == "AU") ^ (country == "US"));
+            
+            Assert((country == "AU").Therefore(carrier == "AUSPO"));
+            Assert((country == "US").Therefore(carrier == "UPS"));
+            
+            Assert(country == "AU");
         }
     }
 
