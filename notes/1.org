@@ -1,0 +1,91 @@
+
+So we'd have /Vars/ each one being attached to various constraint relations
+
+as these relations were attached, the vars possible values would be updated
+each assertion would pin down values further
+
+if there were inconsistencies, ie if constraints were not in harmony, ie if x==3 and x==2
+then multiple worlds would be created; one in which x was 3, and another in which it was 2
+
+if values are to bubble up locally and incrementally, it has to be this way - ruling that the impossibity of the given clauses
+means our goal is false, requires a full view - not sure this is true ya know
+
+we have to pin some things as being true - this is what Assert() will do: each assertion will be accumulated into a present list; and each assertion will be a point
+from which whittle down the graph
+
+but what if the assertions disagree? each assertion would create its own world of possibilities, these worlds could be combined; only some consistently
+but each entire world shouldn't just be one separate slice - rather, if there's a choice to be made at a certain point, given the assertions that have been made,
+these should be presented by the graph: got two separate values here? choose which one you want - the possibiities in this case are enumerable
+
+but var values are enumerable too when there is insufficient information to whittle them down properly
+saying that a var is in a discrete set of values means nothing more than that there are multiple theories about, with no easy way of choosing
+
+an or statement such as /assert(x==3|x==4)/ means nothing more than /assert(x==3); assert(x==4)/
+similarly /assert(x.In(1,2,3))/ means /assert(x==1); assert(x==2); assert(x==3)/
+
+each one of the possibilities is itself a point of assertion
+
+-----
+
+so, whereas in Prolog there's a single goal assertion (but accessing an accumulated db of clauses)
+a single goal soon branches out into many goals however
+
+----
+
+it is true that the values of x given /x==2; x==3/ would be quickly whittled down to 2,3
+
+there's one deduction per variable then? if you wanted to sample a particular variable, 
+you would only care about its possible worlds, those centred on its own enumerable values
+
+how about this:
+/assert(x.In(2,3) & y==x & y==-x)/
+
+here y is related to y, but by two contradictory connections
+x has its two values, its two world therefore; and y, sadly, is in a state of contradiction - how can it be x and -x at the same time?
+these two values can't be colated and enumerable as choices, as then this would be equivalent to /y==x | y==-x/
+
+this makes all worlds impossible, never mind the consistent choices of x
+
+but if variables are sampled individually, we lose the linkages between them
+
+once we have sampled one variable, we have limited our choices for others
+exactly which world we are viewing isn't decided until we have read each var: reading changes things
+
+in fact, sampling a variable pins its value in the network, which must have repercussions elsewhere
+
+is this what it means to enumerate possibilities: it's just a series of pinnings, each one then overriding the previous
+
+ah, but we've already treated contentious pinnings as 'ors' - this should change though, multiple assertions are surely 'ands' - and require consistency
+
+-----
+
+they're not 'ands' if we're in the business of enumerating possibilities though - things exclusive or-ed are exactly this - exclusive possibilities that /can/ be enumerated
+
+what is the difference between & and ^ here then? the former is more hardline, its stinginess means we must enumerate worlds; the latter retains the multiplicity within the one original world
+yet plainly, in choosing arbitrarily one from a series of ^ ops, we are choosing between worlds too.
+
+Worlds within worlds here.
+
+/x==1 & x==2/ - inconsistent, requires intervention of choice to correct world - we have tangentially indicated two consistent worlds here; we have to lose one of the constraints however
+we are in the business of making the world as specced consistent
+which is a separate manouevre from concretion below
+we seek both consistency and concretion - our specs can be deficient in both ways
+
+/x==1 ^ x==2/ - consistent, though again requiring intervention to materialize one value
+the above is a specification for a world - it is not a material world itself; cannot be concrete because of the choice it invites
+when we enumerate possible values of x here, we are in the business of making the world concrete
+
+in making something more concrete, is it possible to also make it less consistent? only if bad choices are made;
+deciding that /x==7/ would confer concreteness but at the cost of consistency
+
+in perfecting our world's spec, we must always be moving in the right direction on both axes of whittling
+
+----
+
+
+
+
+
+
+
+

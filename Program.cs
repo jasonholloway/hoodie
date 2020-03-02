@@ -1,41 +1,99 @@
-﻿namespace probs
+﻿using System;
+using System.Collections.Generic;
+
+namespace probs
 {
     using static Ops;
 
     public static class Ops
     {
-        public static void Assert(Atom<bool> atom) {}
+        public static void Assert(Node node) {}
 
-        public static Atom<bool> In<T>(this Atom<T> atom, params T[] vals) => default;
+        public static Node In(this Node node, params object[] vals) => default;
 
-        public static Atom<bool> Therefore(this Atom atom, Atom other) => default;
+        public static Node Therefore(this Node node, Node other) => default;
+
+        public static IEnumerable<object> Eval(this Node node)
+        {
+            //need to aggregate constraints... yielding narrower and narrower atoms
+
+            return new object[0];
+        }
     }
 
-    public abstract class Atom
+    public class Value
     {
-        public static Atom<bool> operator &(Atom me, Atom other) => default;
-        public static Atom<bool> operator ^(Atom me, Atom other) => default;
+        
+        
     }
 
-    public class Atom<T> : Atom
+    public class Node
     {
-        public static Atom<bool> operator ==(Atom<T> me, T val) => default;
-        public static Atom<bool> operator !=(Atom<T> me, T val) => default;
+        public readonly List<Constraint> Constraints = new List<Constraint>();
+
+        public override string ToString()
+        {
+            return string.Join(", ", this.Eval());
+        }
+
+        public static Node operator ==(Node me, object val)
+        {
+            var result = new Node();
+            
+            var constraint = new Equals(me, val, result);
+            me.Constraints.Add(constraint);
+            result.Constraints.Add(constraint);
+
+            return result;
+        }
+
+        public static Node operator !=(Node me, object val) => default;
+        
+        public static Node operator &(Node me, Node other) => default;
+        public static Node operator ^(Node me, Node other) => default;
+        
     }
+    
+    public abstract class Constraint {
+    }
+
+    public class Equals : Constraint
+    {
+        public Node Left { get; }
+        public object Right { get; }
+        public Node Result { get; }
+
+        public Equals(Node left, object right, Node result)
+        {
+            Left = left;
+            Right = right;
+            Result = result;
+        }
+    }
+
     
     internal class Program
     {
         public static void Main(string[] args)
         {
-            var env = new Atom<string>();
+            var country = new Node();
+            Assert(country == "AU");
+            
+            Console.WriteLine();
+            Console.WriteLine($"country: {country}");
+            Console.WriteLine();
+        }
+        
+        public static void _Main(string[] args)
+        {
+            var env = new Node();
             Assert(env.In("F1", "F2", "PreProd"));
 
-            var country = new Atom<string>();
+            var country = new Node();
             Assert(country.In("UK", "GB", "US", "DE", "AU"));
 
-            var carrier = new Atom<string>();
+            var carrier = new Node();
             Assert(carrier.In("AUSPO", "UPS", "HERMES", "TNT"));
-            
             
             Assert((country == "AU") ^ (country == "US"));
             
@@ -43,6 +101,10 @@
             Assert((country == "US").Therefore(carrier == "UPS"));
             
             Assert(country == "AU");
+            
+            Console.WriteLine();
+            Console.WriteLine($"country: {country}");
+            Console.WriteLine();
         }
     }
 
