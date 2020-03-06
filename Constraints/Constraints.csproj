@@ -4,6 +4,7 @@
         <TargetFramework>netcoreapp2</TargetFramework>
         <LangVersion>latest</LangVersion>
         <OutputType>Exe</OutputType>
+        <RootNamespace>probs</RootNamespace>
     </PropertyGroup>
 
 </Project>

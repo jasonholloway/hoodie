@@ -7,63 +7,53 @@ namespace probs
 
     public static class Ops
     {
-        public static void Assert(Node node) {}
-
-        public static Node In(this Node node, params object[] vals) => default;
-
-        public static Node Therefore(this Node node, Node other) => default;
-
-        public static IEnumerable<object> Eval(this Node node)
+        public static void Assert(Node node)
         {
-            //need to aggregate constraints... yielding narrower and narrower atoms
-
-            return new object[0];
+            //crawls through graph constraining variables
+            //...
         }
     }
 
-    public class Value
-    {
-        
-        
-    }
-
-    public class Node
+    public class Variable
     {
         public readonly List<Constraint> Constraints = new List<Constraint>();
 
-        public override string ToString()
+        internal void AddConstraint(Constraint constraint)
         {
-            return string.Join(", ", this.Eval());
-        }
-
-        public static Node operator ==(Node me, object val)
-        {
-            var result = new Node();
-            
-            var constraint = new Equals(me, val, result);
-            me.Constraints.Add(constraint);
+            var result = new Variable();
+            Constraints.Add(constraint);
             result.Constraints.Add(constraint);
-
-            return result;
         }
+        
+        public static Node operator ==(Variable me, object val)
+            => new EqualsNode(new VariableNode(me), new ConstantNode(val));
 
-        public static Node operator !=(Node me, object val) => default;
+        public static Node operator !=(Variable me, object val)
+            => new NotNode(new EqualsNode(new VariableNode(me), new ConstantNode(val)));
         
-        public static Node operator &(Node me, Node other) => default;
-        public static Node operator ^(Node me, Node other) => default;
-        
+        public static Node operator &(Variable me, Node other) => default;
+        public static Node operator ^(Variable me, Node other) => default;
+
+        public object Sample() => default;
     }
-    
+
+    public static class VariableExtensions
+    {
+        public static Node In(this Variable variable, params object[] vals)
+            => default;
+    }
+
+
     public abstract class Constraint {
     }
 
     public class Equals : Constraint
     {
-        public Node Left { get; }
+        public Variable Left { get; }
         public object Right { get; }
-        public Node Result { get; }
+        public Variable Result { get; }
 
-        public Equals(Node left, object right, Node result)
+        public Equals(Variable left, object right, Variable result)
         {
             Left = left;
             Right = right;
@@ -76,7 +66,7 @@ namespace probs
     {
         public static void Main(string[] args)
         {
-            var country = new Node();
+            var country = new Variable();
             Assert(country == "AU");
             
             Console.WriteLine();
@@ -86,13 +76,13 @@ namespace probs
         
         public static void _Main(string[] args)
         {
-            var env = new Node();
+            var env = new Variable();
             Assert(env.In("F1", "F2", "PreProd"));
 
-            var country = new Node();
+            var country = new Variable();
             Assert(country.In("UK", "GB", "US", "DE", "AU"));
 
-            var carrier = new Node();
+            var carrier = new Variable();
             Assert(carrier.In("AUSPO", "UPS", "HERMES", "TNT"));
             
             Assert((country == "AU") ^ (country == "US"));
@@ -106,6 +96,14 @@ namespace probs
             Console.WriteLine($"country: {country}");
             Console.WriteLine();
         }
+        
+        //the question is, do we have both Nodes and Variables?
+        //nodes are AST components; asserting on these binds them to variables
+        //which means each kind of relation requires both an AST link and an actual constraining relation
+        //
+        
+        
+        
         
         //an Assert applies directly
         //propagating through the network
