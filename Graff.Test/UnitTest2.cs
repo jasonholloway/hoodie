@@ -18,7 +18,7 @@ namespace Graff.Test2
                 from _ in Assert(GreaterThan(varX, 3))
                 select varX;
 
-            var (g, x) = graph();
+            var (g, x) = graph(new GraphState());
             
             var domain = g.GetDomain(x);
             domain.ShouldNotBeNull();
@@ -189,7 +189,19 @@ namespace Graff.Test2
 
         public (GraphState, Var) SummonVar(string name)
         {
-            throw new NotImplementedException();
+            if (_vars.TryGetValue(name, out var found))
+            {
+                return (this, found);
+            }
+
+            var @var = new Var();
+            return (
+                new GraphState(
+                    _vars.SetItem(name, @var), 
+                    _binds
+                    ),
+                @var
+            );
         }
 
         public Domain GetDomain(Port port)
@@ -258,14 +270,20 @@ namespace Graff.Test2
 
     public static class GraphExtensions
     {
-        public static Graph<TResult> Select<TSource, TResult>(this Graph<TSource> context, Func<TSource, TResult> select)
-        {
-            throw new NotImplementedException();
-        }
-        
-        public static Graph<TTo> SelectMany<TFrom, TVia, TTo>(this Graph<TFrom> graph, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
-        {
-            throw new NotImplementedException();
-        }
+        public static Graph<TResult> Select<TSource, TResult>(this Graph<TSource> source, Func<TSource, TResult> select)
+            => graph =>
+            {
+                var (g, v) = source(graph);
+                return (g, select(v));
+            };
+
+        public static Graph<TTo> SelectMany<TFrom, TVia, TTo>(this Graph<TFrom> source, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => graph =>
+            {
+                var (g1, v1) = source(graph);
+                var (g2, v2) = collectionSelector(v1)(g1);
+                return (g2, resultSelector(v1, v2));
+            };
+
     }
 }
