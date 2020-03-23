@@ -46,6 +46,16 @@ namespace probs
 
     public abstract class Constraint {
     }
+    
+    //so, constraints... they are added together as per checkout kata, but they affect not just single variables, they span multiple ones in fact
+    //in fact, each time we try to accumulate constraints, we do so speculatively, to see if we can whittle them to a possible simplicity
+    //...
+    //
+    //though some constraints aren't either/or, but are mergeable
+    //you could say such constraints are joined by 'ands'
+    //...
+    //
+    //as we crawl along, we accumulate constraints, but centred on nodes
 
     public class Equals : Constraint
     {
