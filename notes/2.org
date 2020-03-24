@@ -1,0 +1,230 @@
+
+the ports of each constraint are immediately attached
+as the domain of one port is whittled in one direction,
+it must propagate through to the next, and each branch of the propagation
+has its context, which can detect cycles
+
+every propagation begins with a modification of the graph
+one variable is added, with an unresolved domain, like a vacuum
+as soon as this variable is placed, then, in being placed, its domain must be resolved
+at each port a propagation begins: or rather, the ports suck in values from their connections
+(and ports will be connected one by one); as each port changes value, its owning constraint must then
+start propagations at its other ports; it's a system of ripples, though each ripple detects reaching its origin again
+at which point it can only continue if it has narrowed that node (propagations must accumulate maps of visited nodes)
+
+a variable by itself has 0..n ports, with the constraint that each exactly equals the other
+creating a variable does nothing, but linking it immediately links two nodes: not just one but two propagations 
+should take place; firstly the binding of the original variable is handled by the variable constraint
+each other port's domain must be harmonized, coerced to equal the incoming; though this isn't a forceful overwriting
+or displacement, but a merging;  
+
+and what does the merging? the domains are generally susceptible to combination, but it has to be the constraints driving it
+
+-------------------------------
+
+an assert /is/ the same as the sampling, in that it locks down a domain to a particular value (many things will flow from this)
+
+but it doesn't return a value like a sampling: an assert is always true;
+
+there's a ruction here between saying 'this is true' and 'this could be true'
+just constructing an equals expression doesn't say that that expression is true - it could be made just to be negated
+there must be centres, sources of truth from which solutions propagate, ripple
+
+yup, everything propagates from assertions
+and if values become impossible because of competing demands from different assertions, their domain becomes /never/
+
+and /sampling/? is that the same: in a way, yes. A sampling pins a value, which then determines other values.
+how about enumeration of options? you get enumeration of worlds I suppose, from the point of view of the chosen variable
+
+so - /pinning/ is in general done on a graph with normal graph effects; it ripples; every single addition of an action to the graph immediately ripples through it
+
+--------------------------------------
+
+I pin, and what? I assert, and what? Get on with numbnuts,
+
+A constraint has its ports, its pins, each of which has a domain; as even without a binding, a leg must have a domain
+when a leg stands alone, whatever the constraint gives it, it must have as its domain: there's no pushback
+
+
+a three-pronged operator:
+a > b = c
+
+b:=3
+the domain of this prong is set, is pinned; this sends a reverberation to its owner
+the constraint '>' receives this reverberation, with a marker so it knows where it came from, its direction
+'>' knows the domains of c and a - in this case they are happily 'any'
+
+the problem is, is that there are two prongs here: '>' knows that c, having the lowest cardinality, can be used to pivot its
+domains: it enumerates its pins' domains, sorts inversely by cardinality, and begins to enumerate possiblities;
+
+'any' itself has a cardinality of one: it is undifferentiated; bool has a cardinality of 2;
+so we enumerate from any, which results in a=any,b=3,c=true|false
+'c' is true|false; projecting from here gives us (a<3,b=3,c=true)|(a>=3,b=3,c=false)
+
+each possible choice is made, and the repercussions felt; each port therefore has its range of possiblities
+
+but what when a port has a very large domain: b=0|1|2|3|4|5|6|7|8 is big enough to be worrisome
+you don't want to enumerate every option; well with numbers, these here are homogenous, continuous;
+could be computed as a range: b=0..8N; the domain then isn't disjunct, doesn't need enumerating
+
+though it is truly disjunct; it's just that a naive unawareness of the homogenity of the disjunction leads to waste
+a<b=c
+a:=0..8N
+b:=3
+'<' knows that natural number a implies natural number b implies boolean c
+c is disjunct; let's explore that...
+when c=false,b>=0..8N >> b=0..N
+when c=true,b<0..8N >> b==-N..8
+
+at each update of a port, the operator knows what should happen to the other ports,
+but what about pre-existing domains?
+
+a<b=c
+c:=true
+
+a:=3
+b:=N (subtypes any)
+c:=true|false (merges into true as supertype)
+
+c is disjunct, so know we explore:
+c:=true
+b:=4..N
+
+c:=false
+b:=-N..2
+
+all possibilities are collected at the relevant points
+leaving b disjunct: there's a choice of domains there
+
+------------
+
+however, do we lose the linkages between frames of possibility? 
+unconvinced: we can't keep every implication in the graph, can we? well - we could
+
+then a choice between two frames would be very simple indeed; hmmm
+
+we want to narrow domains as much as possible to minimise the cost of updating, to store work in the immutable structures
+a small change shouldn't cause much recomputation
+
+but frames of possiblity are linked then, and it's only by an act of violence that they become pinned (or rather - that one particular frame is chosen)
+
+maintaining the content of the graph would involve retaining links between frames, and there would be a massive number of them
+but an entire separate frame wouldn't be stored; only links between the distinct options - if one option is chosen, then neighbouring points
+will have certain domains; so each domain, being a choice, will have links to all other domains that follow from it
+
+when c=true, then by the choice of this domain, other domains across the operator become known
+all avenues need eagerly exploring to whittle down local possibilities; and in doing this a big network of domain assignments is spread
+
+each time a possible domain is found for a port, we assign it as a local possibility to that port; 
+
+-------------------------------------
+
+a variable can be bound? presumably
+x>3=true
+
+------------------------------------------------------------------------
+
+ports /always/ have bindings
+ports in their pristine state are bound to a common 'any' constant
+ports can have multiple bindings; which functions like an 'and'; a variable is just one big 'and'
+
+but the bindings of a single port must agree on domain: it is basically a single entity
+or - instead of having multiple bindings, maybe a binding can relate multiple ports
+a binding is a set of ports that are correlated, along with a single domain across them
+
+the job of a constraint is to react to changes in these domains, and to propagate its own domain changes out via other ports and other bindings
+
+
+
+
+----------------------------------------
+
+            //in binding, each port affected needs to be given the binding
+            //but what about the old binding, eh?
+            //we can't just summarily replace the binding
+            //as severing the binding messes with whatever's bound at the other end
+            
+            //in binding, whatever bindings are already in place should be merged in
+            //each port can have only one binding per environment
+            
+            //whatever domain the current binding has should be the least upper bound of the ports
+            //it currently touches; any new bindings on top of this should only narrow the domain
+            //
+            //but what about disjunctions - aren't these expansions of the domain, sums of the domain?
+            //well, they kind of are, yes; products are expressed via bindings, as all the individual
+            //domains of the contributing ports are brought together, only what satisfies them all suffices:
+            //each binding is basically an '&' relation - a foundational, primitive relation
+            //
+            //but, if '&' is so ensconced, then where is its opposite '|' - surely somewhere in plain sight it hides
+            //also, where does it leave our constructions of constraints, with their ports?
+            //
+            //if a binding is an '&', then a three-way binding is two binary '&' relations chained 
+            //all domains are narrowed, so this is fine, we can work one by one methodically until the domain of the whole
+            //is achieved
+            //
+            //but if a binding is removed, or are in general removable, then domains can expand too - this means i think
+            //that everything needs to be recalculated; whereas if they're only ever added, then we can happily narrow them down
+            //more simply
+            //
+            //
+
+-------------------------
+
+so where is the disjunction? disjunctions are set up explicitly; and terms of a disjunction are only ruled out when they are narrowed to /never/
+
+the most innocently simple introduction of a disjunction is in a relation with a port of true/false: boolean isn't a domain, but a disjunction
+
+disjunctions are the thing, as they are the frames of possiblity of the graph
+
+a boolean disjunct domain is pinned to a port via a binding to a Const
+this domain has two halves, of course
+
+and in its emplacement, must trigger a refresh on the contraint owner of the port
+but not just one refresh: one for each possible value!
+
+that is, true is firstly bound in one propagation, and false in another; each propagation has its own env, but as it proceeds, it 
+gathers the possible envs and their bindings, so that each bindings possible domains can be found local to the binding alone as a disjunction
+
+what we're really creating is an overall disjunction of envs; at each disjunction in the propagation, a distinct env is created
+when we enumerate the possible values of a node, what we're really doing then is enumerating the possible environments; when we choose 
+
+------------------------------------------
+
+so each time we enumerate choices, we are branching off a new immutable env, with its own bindings
+but, as some choices will be invalid, leading to nevers, these envs are to be suppressed
+
+is it then, with every step of evaluation, a changing roster of envs is in place, each one giving a disjunction of values
+to the various nodes? or do we say definitively, that a propagation has to complete, before it is registered as viable and visible
+
+the problem we have here is that every env frame is final and obsolete after it has been formed, each intermediate frame is itself only
+
+each explored frame could contribute itself to the general collection of likely frames, but this leaves huge duplication
+the real structure to be tracked isn't one of frames, but of branches; and these branches need snipping if they lead nowhere good
+
+so, a never needs returning somewhere - each branch needs its root, its controller; but then there are branches on branches - ie a tree of branches!
+one branch that seems good in itself could be rendered moot by a bad sibling branch it knows nothing about
+
+so, full awareness of what's available value-wise only arrives at the end of the overall evaluation; 
+and each evaluation on each addition starts from a unique spot: when a binding is made, then somehow this ripples
+
+the binding itself has no logic, but it notifies its subscribers of changesa to its domain; so - the very first binding is made...
+two ports brought together; when a binding has been created pristine and registered in the map, then the constraints are notified of this
+in some order, by the runtime.
+
+so it's actually the graph that begins each reevaluation, driven by the initial act of binding; this then propagates via each constraint's handlers
+so, the root driver then figures some bindings, but it won't always do the entire network - the propagation will be muffled if no domain changes are 
+detected in some subbranch. Each addition makes for some changes, on top of the common pile of bindings.
+
+but all changes coming out of a change will be known to its tree of propagations; 
+
+how about - never spreads out from the tips of the tree as it's found, and eventually reach the root;
+the only guard against the spread of /never/ is the disjunction; all other constraints are blitzed by it
+
+
+
+
+
+
+
+
+
