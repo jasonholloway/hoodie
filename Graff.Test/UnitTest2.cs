@@ -179,6 +179,9 @@ namespace Graff.Test2
 
         public GraphState Bind(params Port[] ports)
         {
+            
+            
+            
             throw new NotImplementedException();
         }
 
