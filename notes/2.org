@@ -220,11 +220,65 @@ but all changes coming out of a change will be known to its tree of propagations
 how about - never spreads out from the tips of the tree as it's found, and eventually reach the root;
 the only guard against the spread of /never/ is the disjunction; all other constraints are blitzed by it
 
+--------------------------------------------------
+
+so the idea is to let never spread: a never on one leg of a constraint inevitably leads to nevers on its other legs: it's just impossible to even contemplate it
+the only guard is the disjunction; this makes it very different from depth-first search; it's an entire system evening out, settling
+
+but, disjunctions are a thing: even the humble boolean, encountered here there and everywhere, is a disjunction; we can't avoid them, even in simple systems
+
+x == 3 is a system of the ternary(!) operator `==`, one Var(x) and a Const(3)
+
+if we were to sample `x`, or even, more like it, if we were to assemble this system, it would eagerly do this...
+
+*bind x and Const(Any)*
+
+*bind x and `==`*
+
+*bind `==` and Const(3)*
 
 
+------
 
+there's a question of how we will represent and compute the product types of co-bindings
+for storage reasons within the graph, we want there to be only one binding per port
+and so a Var will only ever have one binding, as it only has one port
 
+but if there's a preexisting binding, our new binding then needs to be combined with the existing
+though - when we create the new binding, before it has all been equalized, then the binding is implicitly
+between any and any, it adds no new information: so in the beginning it is just an extension of the existing binding,
+a new port in its set of ports
 
+but then - this binding, newly extended, needs to be bound to a new port: in this case there will only ever be /one/ new port
+and this new port can only narrow the domain of the binding
+
+so the new binding triggers a reaction only in the one recipient
+
+every time a binding is extended, it faces a crisis, a present disjunction that it must harmonize
+as soon as the binding is made this is the case; but only via the response of the port it has bound onto
+
+the binding must tell the port its current domain; the constraint must then respond with a narrower domain that it finds fitting
+or it must respond passively, happily taking on the domain of the binding as an improvement on its own
+
+if a better domain is returned, then the binding must tell its other members of this new demand, and the rippling continues
+
+the adding of a binding is no different from the propagation of a new domain via a binding: in both cases, the constraint receives it
+
+there is the question of talking back, of there being a conversation... 
+the binding has no choice but to take what it's given: there's no choice in any of this; so there's no advantage to going breadth first
+with this; the binding in its rippling should take whatever's returned to it from the first port, then it should move onto the next,
+meaning that if the first, when offered say `1`, returns instead `never`, as `1` can never be (under the condition of `1` as presented
+being a fact, then its better, more narrow proposition, is just to say `no` - this is a better, more precise domain; it is helping)
+
+...if the first port returns with `never`, then the binding must take on that better offer as a matter of course, and proceed to tell others
+on its rounds that its domain is in fact now `never`: and so the black hole of impossibility spreads
+
+the problem is, this parrying counter-offer needs to propagate back on its own course over the binding, even to the original propagator:
+the counter-offer is in fact a completely new propagation; and should be impelled into the binding separately;
+
+the binding then should do its rounds first (though this is wasteful...) before the ports are given a chance to make their feelings felt
+
+here we need as always a protocol of communication between the various parts
 
 
 
