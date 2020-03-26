@@ -280,5 +280,68 @@ the binding then should do its rounds first (though this is wasteful...) before 
 
 here we need as always a protocol of communication between the various parts
 
+-----------------------------------------------
+
+each constraint firstly receives a new domain, and then must reply with its own narrower conclusion
+
+it's best for it to reply first, as the narrower we can make the domain the sooner the better
+breadth first makes more sense if branches aren't interdependent, but in this case they certainly are, and computation always tends towards simplicity
+
+so - a constraint receives the domain, narrows it, sends it back to the binding; not as part of the same converation, but as a cascading barking of orders
+the tendency is always towards narrowness - everything goes in one direction; it can be kicked down the hill by all and any feet at any time, and repeatedly
+
+the context of the rippling, with all of its reassignments narrowings etc
+
+--------------------------------------------------------
+
+I've been saying that domains only ever get narrower - except for by disjunction, where there's a choice of possible values
+
+Some part of me says that disjunctions can't be created out of nothing: ie you need a choice to have a choice; as if choices are only ever mapped
+
+but then there is productive recursion, whereby going again and again across a discrete field - in fact, creating a discrete field of chained disjunctions - 
+produces choices out of nothing. No; such a recursive construction requires a primitive, pure disjunction.
+
+As in, the very domain is in all cases transcendable by choice: you have this, but you could have something else; at every point there's a disjunction
+
+But we don't have this: we do have the cartesian product of all original disjunctions as possibilities, and we whittle these down into manageable scenarios
+
+--------------------------------------------------------
+
+Disjunctions can be merged into domains
+a|b|c|r|s|t == (a-c)|(r-t)
+
+--------------------------------------------------------
+
+but if we newly assign a disjunction to a previous range
+ie x:any -> x:1|2|3
+
+then that only works because 1|2|3 is in fact narrower than any
+
+that is, narrowing applies just as much to disjunctions
+
+-----------------------------------------------------------------
+
+when receiving a domain update, should a port handler reply directly?
+
+no - it needs to proceed on its own course, with its own velocity, back even to the original original propagator
+in rippling throught a binding, propagation proceeds to all but the source port; if we merely reply with a domain,
+how can we be sure it will propagate properly?
+
+this does though mean lots of stack usage, but whatevs
+
+-------------------------------------------------------------------
+
+Equality isn't the same thing as being in a range
+
+
+
+
+
+
+
+
+
+
+
 
 

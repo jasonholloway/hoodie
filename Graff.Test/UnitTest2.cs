@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using NUnit.Framework;
 using Shouldly;
 
@@ -30,13 +31,17 @@ namespace Graff.Test2
     //they are like a self-equal constraint, with however many ports
     //they are a kind of constraint; and like any constraint they have their own encapsulated logic of propagation
 
+    public delegate Graph<Domain> Rippler(Graph<(Domain from, Domain to)> graph);
+
     public class Port
     {
         public readonly string Name;
+        private readonly Rippler _rippler;
 
-        public Port(string name)
+        public Port(string name, Rippler rippler)
         {
             Name = name;
+            _rippler = rippler;
         }
 
         #region Conversions
@@ -65,7 +70,15 @@ namespace Graff.Test2
     public class NeverDomain : Domain {}
     public class IntDomain : Domain {}
     public class BoolDomain : Domain {}
-    
+    public class TrueDomain : BoolDomain {}
+    public class FalseDomain : BoolDomain {}
+
+    public static class Domains
+    {
+        public static readonly Domain Any = new AnyDomain();
+        public static readonly Domain Never = new NeverDomain();
+        public static readonly Domain Bool = new BoolDomain();
+    }
 
     public class Binding
     {
@@ -79,7 +92,7 @@ namespace Graff.Test2
         }
 
         public Binding() 
-            : this(ImmutableHashSet<Port>.Empty, new AnyDomain())
+            : this(ImmutableHashSet<Port>.Empty, Domains.Any)
         { }
 
         public IEnumerable<Port> Ports => _ports;
@@ -106,7 +119,10 @@ namespace Graff.Test2
 
         public Var()
         {
-            Port = new Port("Port");
+            Port = new Port(nameof(Var), 
+                incoming => 
+                    from _ in incoming
+                    select Domains.Any);
         }
     }
 
@@ -116,7 +132,14 @@ namespace Graff.Test2
 
         public Const(Domain domain)
         {
-            Port = new Port("Port");
+            Port = new Port(nameof(Const),
+                received =>
+                    from d1 in received
+                    select d1 switch
+                    {
+                        (AnyDomain _, _) => domain,
+                        _ => Domains.Any
+                    });
         }
     }
 
@@ -128,9 +151,35 @@ namespace Graff.Test2
 
         public AreEqualConstraint()
         {
-            Left = new Port(nameof(Left));
-            Right = new Port(nameof(Right));
-            Result = new Port(nameof(Result));
+            Left = new Port(nameof(Left), 
+                incoming =>
+                    from d1 in incoming
+                    from right in Domain(Right)
+                    from result in Domain(Result)
+                    from d2 in (right, result) switch
+                    {
+                        (_, TrueDomain _) => Set(Right, d1.to), //better than this please
+                        (_, FalseDomain _) => Set(Right, d1.to),
+                        (_, BoolDomain _) => Set(Right, d1.to),
+                        _ => Set(Right, Domains.Never)
+                    }
+                    select d2);
+            
+            //but how can the above 
+            //
+            //
+            //
+            
+
+            Right = new Port(nameof(Right),
+                incoming =>
+                    from _ in incoming
+                    select Domains.Any);
+
+            Result = new Port(nameof(Result),
+                incoming =>
+                    from _ in incoming
+                    select Domains.Any);
         }
     }
 
@@ -142,9 +191,20 @@ namespace Graff.Test2
 
         public GreaterThanConstraint()
         {
-            Left = new Port(nameof(Left));
-            Right = new Port(nameof(Right));
-            Result = new Port(nameof(Result));
+            Left = new Port(nameof(Left), 
+                incoming =>
+                    from _ in incoming
+                    select Domains.Any);
+            
+            Right = new Port(nameof(Right), 
+                incoming =>
+                    from _ in incoming
+                    select Domains.Any);
+            
+            Result = new Port(nameof(Result), 
+                incoming =>
+                    from _ in incoming
+                    select Domains.Any);
         }
     }
 
@@ -155,12 +215,19 @@ namespace Graff.Test2
 
         public IsNumberConstraint()
         {
-            Inner = new Port(nameof(Inner));
-            Result = new Port(nameof(Result));
+            Inner = new Port(nameof(Inner),
+                incoming =>
+                    from _ in incoming
+                    select Domains.Any);
+            
+            Result = new Port(nameof(Result),
+                incoming =>
+                    from _ in incoming
+                    select Domains.Any);
         }
     }
 
-    public delegate (GraphState, TVal) Graph<TVal>(GraphState graph = default);
+    public delegate (GraphState, TOut) Graph<TOut>(GraphState graph = default);
 
     public class GraphState
     {
@@ -179,9 +246,6 @@ namespace Graff.Test2
 
         public GraphState Bind(params Port[] ports)
         {
-            
-            
-            
             throw new NotImplementedException();
         }
 
@@ -268,6 +332,15 @@ namespace Graff.Test2
             => from value in graph
                from result in Assert(value)
                select result;
+
+        public static Graph<Domain> Domain(Port port)
+            => graph => (
+                graph, 
+                graph.GetDomain(port)
+            );
+        
+        public static Graph<Domain> Set(Port port, Domain domain)
+            => throw new NotImplementedException();
     }
     
 
