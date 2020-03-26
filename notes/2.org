@@ -333,14 +333,21 @@ this does though mean lots of stack usage, but whatevs
 
 Equality isn't the same thing as being in a range
 
+if the result is true, then both legs /must/ be the same
 
+1 != Int
 
+The result being false leaves the legs free; but true is coercive
 
+Const(1).In(Domains.Int) == Const(true)
 
+---------------------------------------------------------------------
 
+what would happen if we put consts in all the wrong places:
 
+Const(1)`== Const(2)`== Const(true)
 
-
+then we'd never know about its internal horrors, as there'd be no way of sampling an output from this closed system
 
 
 

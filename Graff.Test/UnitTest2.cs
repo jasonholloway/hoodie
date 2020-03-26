@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using NUnit.Framework;
 using Shouldly;
 
@@ -158,18 +159,12 @@ namespace Graff.Test2
                     from result in Domain(Result)
                     from d2 in (right, result) switch
                     {
-                        (_, TrueDomain _) => Set(Right, d1.to), //better than this please
+                        (_, TrueDomain _) => Set(Right, d1.to),
                         (_, FalseDomain _) => Set(Right, d1.to),
-                        (_, BoolDomain _) => Set(Right, d1.to),
-                        _ => Set(Right, Domains.Never)
+                        (_, BoolDomain _) => Set(Result, d1.to),
+                        _ => SetNever(Right, Result)
                     }
                     select d2);
-            
-            //but how can the above 
-            //
-            //
-            //
-            
 
             Right = new Port(nameof(Right),
                 incoming =>
@@ -228,6 +223,13 @@ namespace Graff.Test2
     }
 
     public delegate (GraphState, TOut) Graph<TOut>(GraphState graph = default);
+
+    public static class Graph
+    {
+        public static Graph<TOut> Lift<TOut>(TOut val) 
+            => new Graph<TOut>(g => (g, val));
+    }
+    
 
     public class GraphState
     {
@@ -341,6 +343,15 @@ namespace Graff.Test2
         
         public static Graph<Domain> Set(Port port, Domain domain)
             => throw new NotImplementedException();
+
+        public static Graph<IEnumerable<Domain>> SetMany(Domain domain, params Port[] ports)
+            => from port in ports
+               from d in Set(port, domain)
+               select d;
+
+        public static Graph<Domain> SetNever(params Port[] ports)
+            => from _ in SetMany(Domains.Never, ports)
+               select Domains.Never;
     }
     
 
@@ -360,6 +371,14 @@ namespace Graff.Test2
                 var (g2, v2) = collectionSelector(v1)(g1);
                 return (g2, resultSelector(v1, v2));
             };
-
+        
+        public static Graph<IEnumerable<TTo>> SelectMany<TFrom, TVia, TTo>(this IEnumerable<TFrom> source, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => source.Aggregate(
+                Graph.Lift(Enumerable.Empty<TTo>()),
+                (gAcc, @from) =>
+                    from acc in gAcc
+                    from via in collectionSelector(@from)
+                    let to = resultSelector(@from, via)
+                    select acc.Concat(new[] { to }));
     }
 }
