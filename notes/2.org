@@ -349,6 +349,150 @@ Const(1)`== Const(2)`== Const(true)
 
 then we'd never know about its internal horrors, as there'd be no way of sampling an output from this closed system
 
+---------------------------------------------------------
+
+there's a problem now of priority:
+
+if one port updates, it must change other ports to make them fit to it
+
+in fact... doesn't this introduce a disjunction? I think it does.
+
+a == b = r
+a = 1
+b = 2
+r = false
+
+if a changes, then either b is changed to suit it, or f flips
+it depends which one has the force of assertion behind it
+
+one of them, if it is pinned, can't be other than what it is
+one of them will have leeway to change its domain
+
+but does this mean that the same assertion has to be scrabbled together time after time?
+not really, because everything should eagerly narrowed down to keep the network nice and tight
+
+------------------------------------------------------------
+
+so, disjunctions then...
+
+when the ripple comes through, it must be explored in multiple directions
+that is, multiple envs are created at the point of disjunction
+
+and these are merged into the overall context - but what is this merge?
+
+envs are themselves in a network, it's like the graph state isn't just in operations, but in the structure of env bindings beneath
+one network bets the other
+
+so when we add something to a graph, we confront its existing bindings: these are its existing envs, and propagating through these
+requires choices to be made at every disjunction
+
+this is the meaning of the disjunction: multiple paths we can take each time
+which env do we want? 
+
+------------------------------------------------------------
+
+disjunctions interact with domains
+
+domains are structured by disjunctions
+always a set of ORs, and inside the ORs, there can only be consolidated domains;
+you might find another disjunction via your first choice, but not immediately
+
+--------------------------------------------------------------
+
+there is a root env, and many subenvs branching from the domains of the ports
+
+every binding then has, what - a tree of domains? there is a total domain per port,
+spreading its options out, and with every choice we actually reduce the domains of all ports
+
+graph has the total graph state, the current env, and whatever the momentary value is
+
+----------------------------------------------------------------
+
+the root graph links via discoverable domains to child envs, each of which links to further envs as choices are made.
+
+I get how we can explore this structure by unpacking disjunct domains, but am unsure as to their creation/maintenance
+
+it must be in the rippling, as domains are all stored in the bindings, and their development and growth in the ripplers.
+
+Ripples both pass forward domains to other bindings, and pass back domains to the source binding
+
+these domains are always disjunct, by default, even if they have only one or no options; and each one of the choices (if there are any)
+is a surging possiblity that has to be followed as it has the force of reality.
+
+such a multiple would then be received by a binding; nothing would be enshrined in the current env yet; but bindings would have to be committed before passing on the initiative,
+otherwise the computation could circle back and find an obsolete binding value in place (though that would be fine, as everything tends towards narrowness)
+
+i'm wrong then, we don't need to defensively commit, as all composes nicely
+
+----------------------------------------------
+
+as things are propagating, the envs are in constant growth/contraction; the overall graph finally settles
+
+the envs branch like trees, but then these branches also loop back, and register themselves against ports they've already visited;
+these new values are not distinct disjunctions, but are of the same branch, and should supersede the previous - in fact here the operation isn't `&`,
+well... it is `&`: 
+Int & 3 = 3 (because `&` requires /both/ from a value - the only value that is both Int and 3 is 3 itself: a narrowing)
+
+envs /branch/... and the branches visit the same nodes again in a loop. But by the time they revisit, they may have split at a disjunction, and so the actual value coming in shouldn't simply override the previous, as now we're in an alternate world from the first (or rather, the first was a common root world; now we revisit, and our sibling approach might also, leading us to register an overriding disjunction with the root env)
+
+in fact, there isn't just one root env, but there are many - and the availability of these envs at each binding domain depends on our path through the maze...
+the overall env of course receives all possibilities: each and every disjunction is accumulated at every node, so we can, if starting afresh from a node, take any path from it;
+but as we make choices, our local env does narrow, presenting us with fewer and fewer options
+
+--------------------------------------------------
+
+the question then is - how do we register looped domains back with original bindings?
+
+some disjunctions might make it back, others not, but they should all accumulate there as they come in; it's like domains need to have some indicator of newness, some value that lets them override others; a kind of vector clock; but with the possibility of branching, this has to be itself a tree - a simplified representation of the domain's heritage; the simplest option here might be to use its real heritage: if each ripple had a link back to its progenitor, then a search could be made to see if the new domain superseded the current one (though, a new domain always supersedes a current one...)
+
+New domains always supersede - the question is, do they supersede one particular disjunction of the current, or the whole?
+
+nb: (a recipient will know which disjunction it itself is in at this point; it has its own state which should tell it how to treat the incoming...)
+
+------------------------------------------------
+
+a looping branch of env that comes back on itself circular; it will assign a domain narower than the previous domain, and if there are no disjunctions in play (the simple case)
+it will simply overwrite, or propagate through the node regardless on its merry way, and all is fine.
+
+but then we introduce the notion of disjunctions, and we should stick to the simplest scenario
+with only one disjunction...
+
+we propagate out a domain which thereafter splits; this then comes back via another pathway one at a time, each branch having its own env separately; and as such the original binding will know nothing of the second coming of the propagation; how even will it be accessible? won't it just be garbage collected as an unused, unneeded historical artifact?
+
+if it exists in the env that makes it back to the root, maybe. But each first modification of the graph, each new binding from outside, makes its first incision in the context of the
+root env that is registered with the graph; ultimately all perturbations must report back to the original caller; and when this env comes back, it must be assigned as root
+
+the issue is that there are many other domains bound to other nodes of the graph;
+
+----------
+
+the surging branches of propagation will be eventually returned to their origin, and it is there, on their return, that they will be summed; in the actual act of rippling, each
+ripple's world is its own; so the assignment to the root env of the graph will take place on the final return of the propagation to the original caller
+
+but in this return and pool, reintegrative, phase - though it makes sense at the outermost root env return, does it make sense elsewhere at intermediate stages? the answer has to be 'yes', as the immediate env is the all wherever we are; 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using NUnit.Framework;
 using Shouldly;
 
 namespace Graff.Test2
 {
     using static GraphOps;
+    using static DomainOps;
     
     public class Tests
     {
@@ -20,7 +20,7 @@ namespace Graff.Test2
                 from _ in Assert(GreaterThan(varX, 3))
                 select varX;
 
-            var (g, x) = graph(new GraphState());
+            var (g, x) = graph(new Env());
             
             var domain = g.GetDomain(x);
             domain.ShouldNotBeNull();
@@ -32,17 +32,33 @@ namespace Graff.Test2
     //they are like a self-equal constraint, with however many ports
     //they are a kind of constraint; and like any constraint they have their own encapsulated logic of propagation
 
-    public delegate Graph<Domain> Rippler(Graph<(Domain from, Domain to)> graph);
+    public struct DomainChange
+    {
+        public readonly Domain From;
+        public readonly Domain To;
+
+        public DomainChange(Domain @from, Domain to)
+        {
+            From = @from;
+            To = to;
+        }
+        
+        public static implicit operator DomainChange((Domain, Domain) tup)
+            => new DomainChange(tup.Item1, tup.Item2);
+    }
+    
+
+    public delegate DisjunctGraph<Domain> Ripple(Graph<DomainChange> graph);
 
     public class Port
     {
         public readonly string Name;
-        private readonly Rippler _rippler;
+        private readonly Ripple _ripple;
 
-        public Port(string name, Rippler rippler)
+        public Port(string name, Ripple ripple)
         {
             Name = name;
-            _rippler = rippler;
+            _ripple = ripple;
         }
 
         #region Conversions
@@ -64,9 +80,14 @@ namespace Graff.Test2
 
         #endregion
     }
+
+
+    public abstract class Domain
+    {
+        public static implicit operator Domain[](Domain domain)
+            => new[] {domain};
+    }
     
-    
-    public abstract class Domain {}
     public class AnyDomain : Domain {}
     public class NeverDomain : Domain {}
     public class IntDomain : Domain {}
@@ -136,11 +157,9 @@ namespace Graff.Test2
             Port = new Port(nameof(Const),
                 received =>
                     from d1 in received
-                    select d1 switch
-                    {
-                        (AnyDomain _, _) => domain,
-                        _ => Domains.Any
-                    });
+                    select d1.From is AnyDomain 
+                        ? domain 
+                        : Domains.Any);
         }
     }
 
@@ -154,27 +173,45 @@ namespace Graff.Test2
         {
             Left = new Port(nameof(Left), 
                 incoming =>
-                    from d1 in incoming
+                    from change in incoming
                     from right in Domain(Right)
                     from result in Domain(Result)
-                    from d2 in (right, result) switch
+                    from d2 in (right, result) switch 
                     {
-                        (_, TrueDomain _) => Set(Right, d1.to),
-                        (_, FalseDomain _) => Set(Right, d1.to),
-                        (_, BoolDomain _) => Set(Result, d1.to),
+                        (_, TrueDomain _) => Set(Right, change.To),
+                        (_, FalseDomain _) => Set(Right, Invert(change.To)),
+                        (_, BoolDomain _) => Set(Result, change.To),     //if result isn't set, then 
                         _ => SetNever(Right, Result)
                     }
                     select d2);
 
             Right = new Port(nameof(Right),
                 incoming =>
-                    from _ in incoming
-                    select Domains.Any);
+                    from change in incoming    //TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    from right in Domain(Right)
+                    from result in Domain(Result)
+                    from d2 in (right, result) switch
+                    {
+                        (_, TrueDomain _) => Set(Left, change.To),
+                        (_, FalseDomain _) => Set(Left, change.To),
+                        (_, BoolDomain _) => Set(Result, change.To),
+                        _ => SetNever(Left, Result)
+                    }
+                    select d2);
 
             Result = new Port(nameof(Result),
                 incoming =>
-                    from _ in incoming
-                    select Domains.Any);
+                    from change in incoming    //TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    from right in Domain(Right)
+                    from result in Domain(Result)
+                    from d2 in (right, result) switch
+                    {
+                        (_, TrueDomain _) => Set(Right, change.To),
+                        (_, FalseDomain _) => Set(Right, change.To),
+                        (_, BoolDomain _) => Set(Result, change.To),
+                        _ => SetNever(Right, Result)
+                    }
+                    select d2);
         }
     }
 
@@ -222,41 +259,62 @@ namespace Graff.Test2
         }
     }
 
-    public delegate (GraphState, TOut) Graph<TOut>(GraphState graph = default);
+    public delegate (Env, TOut) Graph<TOut>(Env env = default);
 
     public static class Graph
     {
         public static Graph<TOut> Lift<TOut>(TOut val) 
-            => new Graph<TOut>(g => (g, val));
+            => g => (g, val);
+
+        public static Graph<TOut> From<TOut>(Graph<TOut> graph)
+            => graph;
+    }
+    
+    
+    public class DisjunctGraph<T>
+    {
+        public readonly Graph<IEnumerable<(Env, T)>> Invoke;
+
+        public DisjunctGraph(Graph<IEnumerable<(Env, T)>> invoke)
+        {
+            Invoke = invoke;
+        }
+
+        public static implicit operator DisjunctGraph<T>(Graph<T> graph)
+            => new DisjunctGraph<T>(env =>
+            {
+                var (env2, v) = graph(env);
+                return (env2, Enumerable.Repeat((env2, v), 1));
+            });
     }
     
 
-    public class GraphState
+    public class Env
     {
         private readonly ImmutableDictionary<string, Var> _vars;
         private readonly ImmutableDictionary<Port, Binding> _binds;
 
-        private GraphState(ImmutableDictionary<string, Var> vars = default, ImmutableDictionary<Port, Binding> binds = default)
+        private Env(ImmutableDictionary<string, Var> vars = default, ImmutableDictionary<Port, Binding> binds = default)
         {
             _vars = vars;
             _binds = binds;
         }
         
-        public GraphState() 
+        public Env() 
             : this(ImmutableDictionary<string, Var>.Empty, ImmutableDictionary<Port, Binding>.Empty)
         { }
 
-        public GraphState Bind(params Port[] ports)
+        public Env Bind(params Port[] ports)
         {
             throw new NotImplementedException();
         }
 
-        public GraphState Pin(Port port, Domain domain)
+        public Env Pin(Port port, Domain domain)
         {
             throw new NotImplementedException();
         }
 
-        public (GraphState, Var) SummonVar(string name)
+        public (Env, Var) SummonVar(string name)
         {
             if (_vars.TryGetValue(name, out var found))
             {
@@ -265,7 +323,7 @@ namespace Graff.Test2
 
             var @var = new Var();
             return (
-                new GraphState(
+                new Env(
                     _vars.SetItem(name, @var), 
                     _binds
                     ),
@@ -273,7 +331,12 @@ namespace Graff.Test2
             );
         }
 
-        public Domain GetDomain(Port port)
+        public (Env, IEnumerable<(Env, Domain)>) GetDomain(Port port)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static Env Merge(params Env[] envs)
         {
             throw new NotImplementedException();
         }
@@ -282,24 +345,24 @@ namespace Graff.Test2
     public static class GraphOps
     {
         public static Graph<Port> IsNumber(Port port)
-            => graph =>
+            => env =>
             {
                 var isNumber = new IsNumberConstraint();
                 return (
-                    graph.Bind(port, isNumber.Inner), 
+                    env.Bind(port, isNumber.Inner), 
                     isNumber.Result
                 );
             };
         
         public static Graph<Var> Var(string name)
-            => graph => graph.SummonVar(name);
+            => env => env.SummonVar(name);
 
         public static Graph<Port> AreEqual(Port p1, Port p2)
-            => graph =>
+            => env =>
             {
                 var areEqual = new AreEqualConstraint();
                 return (
-                    graph
+                    env
                         .Bind(p1, areEqual.Left)
                         .Bind(p2, areEqual.Right),
                     areEqual.Result
@@ -307,11 +370,11 @@ namespace Graff.Test2
             };
         
         public static Graph<Port> GreaterThan(Port p1, Port p2)
-            => graph =>
+            => env =>
             {
                 var greaterThan = new GreaterThanConstraint();
                 return (
-                    graph
+                    env
                         .Bind(p1, greaterThan.Left)
                         .Bind(p2, greaterThan.Right),
                     greaterThan.Result
@@ -319,8 +382,8 @@ namespace Graff.Test2
             };
 
         public static Graph<T> Pin<T>(Port p, T value)
-            => graph => (
-                graph.Pin(p, new BoolDomain()),
+            => env => (
+                env.Pin(p, new BoolDomain()),
                 value
             );
         
@@ -335,11 +398,8 @@ namespace Graff.Test2
                from result in Assert(value)
                select result;
 
-        public static Graph<Domain> Domain(Port port)
-            => graph => (
-                graph, 
-                graph.GetDomain(port)
-            );
+        public static DisjunctGraph<Domain> Domain(Port port)
+            => new DisjunctGraph<Domain>(env => env.GetDomain(port));
         
         public static Graph<Domain> Set(Port port, Domain domain)
             => throw new NotImplementedException();
@@ -353,23 +413,30 @@ namespace Graff.Test2
             => from _ in SetMany(Domains.Never, ports)
                select Domains.Never;
     }
+
+
+    public static class DomainOps
+    {
+        public static Domain Invert(Domain domain)
+            => throw new NotImplementedException();
+    }
     
 
     public static class GraphExtensions
     {
         public static Graph<TResult> Select<TSource, TResult>(this Graph<TSource> source, Func<TSource, TResult> select)
-            => graph =>
+            => env =>
             {
-                var (g, v) = source(graph);
-                return (g, select(v));
+                var (env2, v) = source(env);
+                return (env2, select(v));
             };
 
         public static Graph<TTo> SelectMany<TFrom, TVia, TTo>(this Graph<TFrom> source, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
-            => graph =>
+            => env =>
             {
-                var (g1, v1) = source(graph);
-                var (g2, v2) = collectionSelector(v1)(g1);
-                return (g2, resultSelector(v1, v2));
+                var (env2, v1) = source(env);
+                var (env3, v2) = collectionSelector(v1)(env2);
+                return (env3, resultSelector(v1, v2));
             };
         
         public static Graph<IEnumerable<TTo>> SelectMany<TFrom, TVia, TTo>(this IEnumerable<TFrom> source, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
@@ -380,5 +447,46 @@ namespace Graff.Test2
                     from via in collectionSelector(@from)
                     let to = resultSelector(@from, via)
                     select acc.Concat(new[] { to }));
+
+        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctGraph<TFrom> source, Func<TFrom, DisjunctGraph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => new DisjunctGraph<TTo>(env =>
+            {
+                var (env2, outers) = source.Invoke(env);
+
+                return outers.Aggregate(
+                    (env2, Enumerable.Empty<(Env, TTo)>()),
+                    (outerAc, outer) =>
+                    {
+                        var (acEnv, acTups) = outerAc;
+                        var (env3, @from) = outer;
+                        
+                        var (env4, inners) = collectionSelector(@from).Invoke(env3);
+                        
+                        var (env5, innerTos) = inners.Aggregate(
+                            (env4, Enumerable.Empty<(Env, TTo)>()),
+                            (innerAc, inner) =>
+                            {
+                                var (innerAcEnv, innerAcTups) = innerAc;
+                                var (innerEnv, via) = inner;
+                                return (
+                                    Env.Merge(innerAcEnv, innerEnv),
+                                    innerAcTups.Concat(new[] { (innerEnv, resultSelector(@from, via)) })
+                                    );
+                            });
+                        
+                        return (
+                            Env.Merge(acEnv, env5), //only merge envs for benefit of root(?) - evaluation of disjunctions should be isolated
+                            acTups.Concat(innerTos)
+                            );
+                    });
+            });
+
+        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this Graph<TFrom> source, Func<TFrom, DisjunctGraph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => ((DisjunctGraph<TFrom>) source).SelectMany(collectionSelector, resultSelector);
+        
+        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctGraph<TFrom> source, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => source.SelectMany(
+                from => (DisjunctGraph<TVia>)collectionSelector(from),
+                resultSelector);
     }
 }
