@@ -1,3 +1,5 @@
+using System;
+
 namespace Hoodie
 {
     public class Port
@@ -9,6 +11,11 @@ namespace Hoodie
         {
             Name = name;
             _ripple = ripple;
+        }
+
+        public Graph<Domain> Update(Domain domain)
+        {
+            throw new NotImplementedException();
         }
 
         public override string ToString()

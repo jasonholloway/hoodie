@@ -35,19 +35,20 @@ namespace Hoodie
     
     public static class GraphExtensions
     {
-        public static (Env, TResult) Select<TSource, TResult>(this (Env, TSource) source, Func<TSource, TResult> select)
-        {
-            var (env, val) = source;
-            return (env, select(val));
-        }
-        
         public static Graph<TResult> Select<TSource, TResult>(this Graph<TSource> source, Func<TSource, TResult> select)
             => env =>
             {
                 var (env2, v) = source(env);
                 return (env2, select(v));
             };
-
+        
+        public static Graph<IEnumerable<TResult>> Select<TSource, TResult>(this Graph<IEnumerable<TSource>> source, Func<TSource, TResult> select)
+            => env =>
+            {
+                var (env2, vals) = source(env);
+                return (env2, vals.Select(select));
+            };
+        
         public static Graph<TTo> SelectMany<TFrom, TVia, TTo>(this Graph<TFrom> source, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
             => env =>
             {
@@ -56,14 +57,52 @@ namespace Hoodie
                 return (env3, resultSelector(v1, v2));
             };
         
+        public static Graph<IEnumerable<TTo>> SelectMany<TFrom, TVia, TTo>(this Graph<IEnumerable<TFrom>> source, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => env =>
+            {
+                var (env2, froms) = source(env);
+                
+                return froms.Aggregate(
+                    (env2, Enumerable.Empty<TTo>()),
+                    (ac, @from) =>
+                    {
+                        var (acEnv, acTos) = ac;
+                        var (viaEnv, via) = collectionSelector(@from)(acEnv);
+                        var to = resultSelector(@from, via);
+                        return (viaEnv, acTos.Concat(Enumerable.Repeat(to, 1)));
+                    });
+            };
+        
+        public static Graph<IEnumerable<TTo>> SelectMany<TFrom, TVia, TTo>(this Graph<IEnumerable<TFrom>> source, Func<TFrom, IEnumerable<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => env =>
+            {
+                var (env2, froms) = source(env);
+                var tos = froms.SelectMany(@from =>
+                {
+                    var vias = collectionSelector(@from);
+                    return vias.Select(via => resultSelector(@from, via));
+                });
+                return (env2, tos);
+            };
+
+        public static Graph<IEnumerable<TTo>> SelectMany<TFrom, TVia, TTo>(this Graph<TFrom> source, Func<TFrom, IEnumerable<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => env =>
+            {
+                var (env2, @from) = source(env);
+                var vias = collectionSelector(@from);
+                return (env2, vias.Select(via => resultSelector(@from, via)));
+            };
+
         public static Graph<IEnumerable<TTo>> SelectMany<TFrom, TVia, TTo>(this IEnumerable<TFrom> source, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
-            => source.Aggregate(
-                Graph.Lift(Enumerable.Empty<TTo>()),
-                (gAcc, @from) =>
-                    from acc in gAcc
-                    from via in collectionSelector(@from)
-                    let to = resultSelector(@from, via)
-                    select acc.Concat(new[] { to }));
+            => env => source.Aggregate(
+                (env, Enumerable.Empty<TTo>()),
+                (ac, @from) =>
+                {
+                    var (acEnv, acTos) = ac;
+                    var (viaEnv, via) = collectionSelector(@from)(acEnv);
+                    var to = resultSelector(@from, via);
+                    return (viaEnv, acTos.Concat(Enumerable.Repeat(to, 1)));
+                });
 
         public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctGraph<TFrom> source, Func<TFrom, DisjunctGraph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
             => new DisjunctGraph<TTo>(env =>

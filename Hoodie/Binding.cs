@@ -14,6 +14,14 @@ namespace Hoodie
             _ports = ports;
             Domain = domain;
         }
+        
+        public Binding(Domain domain)
+            : this(ImmutableHashSet<Port>.Empty, domain)
+        { }
+
+        public Binding(Port port)
+            : this(ImmutableHashSet<Port>.Empty.Add(port), Domains.Any)
+        { }
 
         public Binding() 
             : this(ImmutableHashSet<Port>.Empty, Domains.Any)
@@ -21,7 +29,7 @@ namespace Hoodie
 
         public IEnumerable<Port> Ports => _ports;
 
-        public Binding SetDomain(Domain domain)
+        public Binding AddDomain(Domain domain)
         {
             throw new NotImplementedException();
         }
@@ -30,5 +38,10 @@ namespace Hoodie
         {
             throw new NotImplementedException();
         }
+        
+        public static Binding Empty = new Binding(ImmutableHashSet<Port>.Empty, Domains.Any);
+
+        public static Binding Merge(Binding b1, Binding b2)
+            => Binding.Empty;
     }
 }

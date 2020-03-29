@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 
 namespace Hoodie
@@ -6,13 +5,10 @@ namespace Hoodie
     public static class GraphOps
     {
         public static Graph<Var> Var(string name)
-            => env => env.Var(name);
-
-        public static Graph<Domain> Bind(IEnumerable<Bindable> bindables)
-            => env => env.Bind(bindables);
+            => env => env.SummonVar(name);
 
         public static Graph<Domain> Bind(params Bindable[] bindables)
-            => Bind(bindables.AsEnumerable());
+            => BaseOps.Bind(bindables.AsEnumerable());
         
         public static Graph<Port> AreEqual(Bindable left, Bindable right)
         {
@@ -52,7 +48,8 @@ namespace Hoodie
             => new DisjunctGraph<Domain>(env => env.GetDomain(port));
 
         public static Graph<Domain> Zap(params Port[] ports)
-            => Bind(Enumerable.Repeat((Bindable)Domains.Never, 1)
+            => BaseOps.Bind(Enumerable
+                .Repeat((Bindable)Domains.Never, 1)
                 .Concat(ports.Select(p => (Bindable)p)));
     }
 }

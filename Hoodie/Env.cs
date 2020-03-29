@@ -19,21 +19,23 @@ namespace Hoodie
         public Env() 
             : this(ImmutableDictionary<string, Var>.Empty, ImmutableDictionary<Port, Binding>.Empty)
         { }
+        
+        public Binding SummonBinding(Port port)
+            => _binds.TryGetValue(port, out var binding)
+                ? binding
+                : new Binding(port);
 
-        public (Env, Domain) Bind(IEnumerable<Bindable> bindables)
+        public (Env, Binding) PutBinding(Binding binding)
         {
-            var domains = bindables.Select(b => b.Inner).OfType<Domain>().ToArray();
-            var ports = bindables.Select(b => b.Inner).OfType<Port>().ToArray();
+            var newBinds = _binds.SetItems(
+                binding.Ports.Select(p => 
+                    new KeyValuePair<Port, Binding>(p, binding)));
             
-            //if there are any preexisting binds on any ports, then these need to be combined
-            //by default, ports are taken to be bound to 'any'
-            //
-            //
-            
-            throw new NotImplementedException();
+            var env = new Env(_vars, newBinds);
+            return (env, binding);
         }
 
-        public (Env, Var) Var(string name)
+        public (Env, Var) SummonVar(string name)
         {
             if (_vars.TryGetValue(name, out var found))
             {
@@ -41,13 +43,8 @@ namespace Hoodie
             }
 
             var @var = new Var(name);
-            return (
-                new Env(
-                    _vars.SetItem(name, @var), 
-                    _binds
-                ),
-                @var
-            );
+            var env = new Env(_vars.SetItem(name, @var), _binds);
+            return (env, @var);
         }
 
         public (Env, IEnumerable<(Env, Domain)>) GetDomain(Port port)
