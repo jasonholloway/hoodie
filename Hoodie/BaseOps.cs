@@ -35,10 +35,6 @@ namespace Hoodie
             select bind1.Domain;
         
         
-        //and now that we have the binding pre-mixed, now we must propagate it;
-        //we do this by going through the ports one by one
-        //and propagating from there
-        //
         public static Graph<Domain> UpdateBinding(Port port, Domain domain) =>
             from binding in SummonBinding(port)
             let binding2 = binding.AddDomain(domain)
