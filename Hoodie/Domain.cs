@@ -1,7 +1,12 @@
+using System;
+
 namespace Hoodie
 {
-    public abstract class Domain
+    public abstract class Domain : IEquatable<Domain>
     {
+        private static int _nextId = 0;
+        private int _id = _nextId++;
+
         public static implicit operator Domain(bool value)
             => value 
                 ? (BoolDomain)new TrueDomain() 
@@ -9,6 +14,9 @@ namespace Hoodie
 
         public static implicit operator Domain(int value)
             => new IntDomain(); //TODO 
+
+        public bool Equals(Domain other)
+            => _id == other._id; //TODO should fallback on proper equality
     }
     
     public class AnyDomain : Domain {}

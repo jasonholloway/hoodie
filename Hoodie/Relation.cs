@@ -14,9 +14,7 @@ namespace Hoodie
         public Var(string name)
         {
             Port = new Port($"Var({name})",
-                incoming => 
-                    from _ in incoming
-                    select Domains.Any);
+                @in => Graph.Lift(Domains.Any));
         }
     }
 
@@ -29,8 +27,7 @@ namespace Hoodie
         public AreEqualConstraint()
         {
             Left = new Port(nameof(Left), 
-                graph =>
-                    from @in in graph
+                @in =>
                     from right in Domain(Right)
                     from result in Domain(Result)
                     from d2 in (right, result) switch 
@@ -43,8 +40,7 @@ namespace Hoodie
                     select d2);
 
             Right = new Port(nameof(Right),
-                graph =>
-                    from @in in graph    //TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                @in => //TODO etc etc
                     from right in Domain(Right)
                     from result in Domain(Result)
                     from d2 in (right, result) switch
@@ -57,8 +53,7 @@ namespace Hoodie
                     select d2);
 
             Result = new Port(nameof(Result),
-                graph =>
-                    from @in in graph    //TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                @in => //TODO etc etc
                     from right in Domain(Right)
                     from result in Domain(Result)
                     from d2 in (right, result) switch
@@ -80,20 +75,14 @@ namespace Hoodie
 
         public GreaterThanConstraint()
         {
-            Left = new Port(nameof(Left), 
-                graph =>
-                    from _ in graph
-                    select Domains.Any);
-            
-            Right = new Port(nameof(Right), 
-                graph =>
-                    from _ in graph
-                    select Domains.Any);
+            Left = new Port(nameof(Left),
+                @in => Graph.Lift(Domains.Any));
+
+            Right = new Port(nameof(Right),
+                @in => Graph.Lift(Domains.Any));
             
             Result = new Port(nameof(Result), 
-                graph =>
-                    from _ in graph
-                    select Domains.Any);
+                @in => Graph.Lift(Domains.Any));
         }
     }
 
@@ -105,14 +94,10 @@ namespace Hoodie
         public IsNumberConstraint()
         {
             Inner = new Port(nameof(Inner),
-                graph =>
-                    from _ in graph
-                    select Domains.Any);
+                @in => Graph.Lift(Domains.Any));
             
             Result = new Port(nameof(Result),
-                graph =>
-                    from _ in graph
-                    select Domains.Any);
+                @in => Graph.Lift(Domains.Any));
         }
     }
 }
