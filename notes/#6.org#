@@ -1,0 +1,451 @@
+
+
+
+so, different operations do different things to the graphs that they knit together
+
+an `or` relation is a lazy kind of operation
+it will evaluate only its first leg
+
+although, if it has a port on its right leg, and it receives some domains at this spot,
+
+
+------------------------------------
+
+sequencing evaluation is against the grain of what we want to do
+
+x1 | x2 should evaluate in both directions at once
+
+but `if(x1) { x2 }` evaluates from the left only, and the block is not even applied to the graph, unless the condition is true
+
+as the `if` operator, when rippled into, must return, not just a disjunction of domains, but also a disjunction of portsets
+
+all ports exist /everywhere/, but their relations only exist conditionally
+
+---------
+
+the `if` returns portsets along with domains
+and when I say portset, I mean a map of bindings, each one enclosing a portset, and each binding enclosing a disjunction of domains
+
+disjunctions then have two levels; firstly we choose the portset binding for a port; and then we choose a domain
+these two levels can obviously be flattened
+
+as these are fed back to the propagator,
+they become overlaid; bindings are merged, and in being merged, their portsets are unioned, and their domains narrowed together
+
+---------
+
+once an env of bindings is fed back, and merged in, it might be that the value affecting the original `if` is modulated, and the `if` might not now match
+yet it is stuck in a causal loop
+
+how, once an env is returned, can that env then be removed, given that we are building on top of it?
+it seems like it can't be; we've built on top of it
+
+but then, how can the `if` be modulated? it seems like it can't be
+
+the merge down must then must have a blind spot so as not to modulate the `if`; once it's spent, it's spent
+
+the `if` decides what it feeds back to the propagator; but as merging is additive, how can it remove itself from a binding?
+
+`if` does not contribute any domain, only an overlay of bindings, which become merged in
+
+---
+
+what would happen if we didn't mask out the `if`? then we'd be open to modulation of the `if`
+
+the evaluation of a block could then deactivate that block
+
+how would such modulation occur? the parts of the env provided by the block would be undistinguishable at this point
+
+unless bindings flowed down like a glacier; as in, all bindings came from similar sources
+except most would just be applied unconditionally at the top level
+and as such would never be modulated
+
+everything, to be fully evaluated, has to percolate down to the root
+if a binding began on the root, then good for it
+but otherwise it exists on the root as a removable layer
+
+and the bindings, when they flow through the if, do they have domains already? it would seem like they should, yes
+though their merging in to the whole would be as well done at the beginning as at the end: in fact it would be more efficiently done at the beginning
+
+but merging is lossy - everything narrows, and this allows us to lose breadth
+
+---------
+
+a further idea: not just the `if` will return bindings; everything will, telling stories of bindings far away
+
+(a + b) = (c + d)
+
+so the three ports here will each propagate full bindings
+
+when we bind (c + d) to `=`,
+(c + d) hasn't been attached to the root at all, it stands as itself, as a small fragment
+
+this is different from the existing way of construction, where individual vars are summoned directly from the graph
+under the above approach, a var is referred to by name only
+
+when graphs are merged, they will be glued together by var
+
+---------
+
+assigning (c + d) to `=` above therefore doesn't just establish a binding between uncontextualised submodules
+it offers up a subprogram to be evaluated by the receiver
+
+---------
+
+but we again have the problem of modulation here; the self-contained block is merged into the root,
+but in this being done, the condition activating the `if` may be changed
+
+if(env = 'prod') { ... } 
+
+it almost seems like it's in the nature of `if` to preclude a merging back in to the base
+
+maybe the `if` is actually a map of a disjunction
+it's a conditional binding; a binding that only affects one disjunction on the subject
+
+instead of applying a new binding at the root level over an entire set of disjuncts, it reaches into one disjunct, and adds binds specifically inside there
+
+the problem is that the disjunct specified might not exist
+in effect we are introducing a new disjunct
+
+if that disjunct actually stabilises into the subject being /never/ then it is an impossible, never-to-be-visited disjunct, and all is well
+
+the `if` is then not that difficult to encode as is: it is just a case of yielding a single disjunct subgraph, and letting it settle into the whole as normal
+
+this though raises the problem of this settling, the merging of dijuncts
+
+plus it relies on yielding not just a domain (again), but really an entire subgraph 
+what would be the structure of this yield?
+
+firstly, a choice in domain; and coupled with each domain, a subgraph in which all other ports (including the one at hand?) exist
+then, in choosing this particular possibility, other worlds become available
+
+though, if this subgraph were to change, would a propagation come through it? No! it will not change, as it's being passed by value here,
+it's dead as a goose at this point; it changes as it is merged; or it is added to at the root level only
+the graph only has so much depth: all comes back to the root as quickly as possible
+
+-------
+
+it's all in the merge... bindings are all added together
+
+this is also an independently testable bit of functionality: all bindings must reasonably merge down <<<<< !!!
+
+-------
+
+two further questions:
+- how exactly will the subgraphs behind subjunctions be?
+- how to emplace a conditional subgraph as a disjunct? this is a question of merging
+
+------
+
+merging domains with subdomains: sounds like we need to structure the disjunctions here...
+instead of just listing the domains, we need to order them so that more specific types come before more general
+a world in which x = 3 is different from a world in which x = int
+
+but - a disjunct conditional on x = int would be true on both values
+in which case the subgraph would be merged into the first, as well as existing still in the more general second
+
+------
+
+subgraphs behind subjunctions: 
+the graph has all the bindings that the propagation knows about in its return
+these might be new, or they might be very few, even mostly duplicated 
+merging down duplications is no good of course - it's a very wasteful fixed cost
+
+the old way of viewing things, though, was that the env being returned with each disjunction 
+would have the bindings that match the currently chosen disjunction and only those, thus simplifying the graph from that point on (which is good)
+as if each env was actually an entire world in itself: we could just throw away the source world and adopt the new one
+
+whatever env is returned with the propagation is `and-ed` into the root, and through this indirect mechanism disjunctions should be cancelled down
+to only match what our propagation has narrowed to
+
+but whereas previously we have been returning only domains, now we need to be returning portsets too
+or rather: bindings.
+
+each port has a multiplicity of bindings in the current env
+and each binding has a multiplicity of domains
+
+but as well as storing these bindings, we should also be storing the envs that give rise to these bindings and domains
+there should be one env per binding/domain
+
+-----
+
+when combining envs on merge down to root, we can as an efficiency saving check for referential equality on the binding etc
+this should short-circuit most nasties
+
+-----
+
+instead of explicitly having multiple bindings with multiple domains nested within, as two levels of horror
+we can just have a one-level set of disjunct bindings
+
+this list will be ordered as before by narrowness of domain
+
+but what of the different portsets? 
+these must be merged in by domain, being basically the envs: 
+
+-----------------------
+
+here we go again
+
+when we load another env, that doesn't mean we abandon our current env
+in fact, the loaded env is merged into the current
+
+there's a choice of pre-merging, or doing so on-demand
+on demand certainly seems better here, and gets us back to using a stack of envs
+
+a subsytem is bound to a var; the subsystem has its own env of bindings
+that have been built up as the expression has been formed
+
+when a propagation rolls in, it will find the env of the subsystem
+
+when the binding is first done, then the new subsystem reverberates into the main root system, and the root system reverberates into the subsystem
+everything should equalise straight away: there should not be any out of-date-bindings hidden away anywhere.
+
+but - there will be out of date bits during the equalisation
+but - we want to equalise everything as soon as possible
+after equalisation, everything should be correct
+
+------------
+
+a condition, a disjunct binding is inserted into the env, somehow...
+it is merged into the existing dijunction
+
+not just the domain is merged in this case (in fact, domains aren't merged in this case)
+but envs are certainly merged
+
+------------
+
+above above, 
+
+when loading a new env at a disjunction, we are propagating, we are equalising
+we are the agent of equalisation 
+
+but the bindings of the root should also hold true in the branch
+that is unavoidable; but if the branch env doesn't have an opinion on the binding
+then we should look to the root
+
+we shouldn't copy every binding across
+
+at first we are incomplete, we can't be expected to be full of every other env's bindings
+
+but as we ripple back, whatever info we have within us should be merged into the base
+
+our full env will sit pristine in the disjunction alongside the domain we expect the binding to have
+while all other bindings we have an opinion on will appear as disjunctions too
+via env merge
+
+-----------
+
+the issue of stack frames
+when we propagate a binding's new domain into a linked env,
+then we're expecting that linked env to have all the other bindings that are touchable via this traversal
+
+but as each binding disjunct links to its own env
+what we have are innumerable miniature incremental envs;
+no env knows more than the binding that is right at hand
+
+if we choose a certain disjunct and take on its env
+then what we get from it immediately is a to-the-point lookup of what binds there are in place against other ports
+so a single env will cover more than only one binding: 
+
+it will get us access (nice narrow access) to a full tranche of other bindings that we would otherwise not see
+in many cases, it is hoped, neighbouring envs will in fact be the same
+and we will just be rediscovering ourselves
+
+-----------
+
+but how will these envs be constructed in the first place?
+we start off with a blank env, a true zero root env
+in adding a binding to a port in this env (our first act)
+we create a new env, which we assign to the disjunct binding
+
+now we add another binding to another, neighbouring port
+now we have a later env, which we associaate with that particular binding
+the old binding will still be pointing to the old env however
+
+here we want the indirection previously mentioned
+but if we have indirection, then we effectively have a mutable env
+
+(not quite)
+
+--------------------------------------------------
+--------------------------------------------------
+
+another idea: no bindings are ever made per-binding; instead we compose envs
+an env with one binding in place is merged with another env with a binding in place
+the ordering shouldn't actually matter; what we have is a monoidal, testable env
+which limits our problem to one of plonking together data structures
+
+-----
+
+this also orientates our investigation of nested envs
+
+when merging two envs, one must appear in the other, and vice versa 
+the two inputs will be normalised to link to the other on all ports
+
+the problem here is that if one env is small, and the other big, both will be made big, rather than relying on a stack structure to give us breadth
+
+if an env has no opinion on a port, it should delegate downwards
+if it does have an opinion, this should overwrite and shadow the opinion of its root
+
+------
+
+when bringing together two such continental masses (actually quite small continents!)
+how do we differentiate between root and branch - it'd seem right that both inputs become branches
+merged into a common root
+
+the root would then be a merging of the two immutable inputs
+
+investigating one binding might lead us into one branch then, and another into another
+in fact such 'branches' would really just be non-controversial parts of a very normal graph
+
+going into one subgraph would not obscure the bindings of the other branch: by delegating to the root all would be visible;
+
+but then another binding is made, bringing us to three (each binding now has its own stub branch effecting little)
+the propagation arising from this new grafting will go into the branches
+and the domains against these bindings will change
+yielding a new subgraph each time
+which can then be linked into the root
+
+-------
+
+what then of a cycle?
+a binding is added, in one single subgraph, between two existing nodes
+in propagating across this loop, we would pick up the additional env of the subgraph
+and via the operator's ports would find the full possibilities of the root to propagate through
+
+if a subgraph has no opinion on the matter, its bindings affect all
+
+well, in propagating back to the main graph, we wouldn't be affecting the main graph directly, but we would be accumulating our own subgraph with its own opinions
+eventually this surge would settle and retreat back into the root - at this point it ssettled findings would be registered, linking to itself of course
+
+--------
+
+we integrate two graphs: this should get us a single merged root
+but still the original graphs should remain linked into the merged root
+though they don't stay pristine for long: soon propagations come along and rewrite them
+
+in fact the wave of propagation immediately hits, like a shockwave on collision;
+and in this rattling about, we should find that things have begun to cohere more
+
+we start by just on principal allowing subgraphs their own space, but this is just so that they can interrelate freely
+
+---------
+
+adding a disjunct to a node
+
+this involves not overwriting, but adding to an existing disjunction, to a merging of graphs rather than stack-like shadowing
+in merging in a graph with this single disjunction, which when propagated returns a full graph of an `if` block,
+we get the functionality we were seeking
+
+---------
+
+merging joins envs into one
+propagating 
+
+------
+
+propagations, as they course through a branch, will also change the root, which keeps tabs on possible values even in its branches
+
+as the new propagation env flows back, it has to also replace previous indexings
+otherwise the propagation itself could do this; but it won't, because the branch itself knows nothing of the root indexing it
+the root just offers shortcuts into the branches, it does not form part of the branch
+
+is there then some distinction between actual domains in a branch, and links to those possibilities in a root?
+I'm imagining happy redirection again, allowing different parts to mutate at their own pace, rather than eager consolidation and correction
+
+if links are to be updated on consolidation, we would need to know befores and afters to match them up, which is no fun
+
+unless these root-level disjunctions were actually lazily populated by graph traversal - let the information live where it is, in its proper place
+and suck up the cost of lazy traversal, with an idea that eager consolidation can be added later - I like this, which simplifies merging
+
+to find a ports possible bindings, we would have to find all settled envs known to us - and they would be known by being linked
+firstly we would enumerate all envs linked to the root, and we would consolidate all the bindings against a port in all the collected envs
+
+------
+
+but an issue with doing things lazily like this is propagation:
+
+when we bind something new, it needs to propagate to all registered disjuncts; seems a bit off to require all affected bindings to be gathered up each time:
+lots and lots of duplication with this approach
+
+so again, instead of lazy traversal, we want to consolidate up front
+
+but then (again) - how to update, keep in sync?
+as new domains are known against various ports, 
+they'll flow down and find their homes
+but they also replace previous registrations
+
+there has to be some linkage basically; and because the branch knows nothing about the root, it's a linkage that must be tracked by the root
+but the root surely can't know which replaces which unless its given a hint
+there must be some marker of identity
+
+------
+
+what if a new propagation returns bindings of never against various ports (a happy occasion!)
+in this case we need to be able to zap other indirect registrations
+
+again this is because these disjuncts are indirect, derived
+
+if we did lazy lookup though, wouldn't everything effectively be indirect (requiring full traversal to find absolutely any disjunct)
+
+two envs would be joined - but there'd be nothing to register anywhere - we'd want to store a link to the env, but not to the specfic disjunct binding
+at every port, there'd be the possibility of looking up bindings in all available envs - even though most would be empty for most ports
+
+------
+
+bindings must have some kind of identity then
+to be updated or even zapped on propagations
+
+if bindings were entities, then their disjuncts could just be updated in place
+every reference to that binding would then be updated
+
+but then we would have to merge bindings into single bindings and retain the identities of the input bindings
+
+another approach would be to percolate not just new bindings, but updates that could be applied to any env
+
+Update(binding1, binding2)
+
+------
+
+each update is streamed back down to be applied
+presumably this application doesn't itself propagate: it's the results of propagation collected
+
+propagation always happens within a disjunct
+
+do we need to update roots as soon as possible? it certainly wouldn't hurt
+we can't yield via rx, but we can call sync callbacks to yield
+
+the immediate application would then make that disjunct available right now, via stack lookup
+
+-------
+
+updates should work as long as disjuncts are all narrowing, as they should so often be
+
+but what about new blocks being applied as part of a propagation?
+
+suddenly we do in fact have an entire env to merge, instead of piecemeal updates
+this entire env could be merged in via updates
+
+but we've said these updates shouldn't themselves propagate anything
+storing in a disjunction is a way of not propagating, isn't it? 
+
+but returning an env from a propagation is expected to also propagate when things downstream change too
+returning the new block's env 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

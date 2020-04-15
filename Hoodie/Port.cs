@@ -13,7 +13,7 @@ namespace Hoodie
             _ripple = ripple;
         }
 
-        public DisjunctGraph<Domain> Update(Domain domain)
+        public DisjunctGraph<Domain> Propagate(Domain domain)
             => _ripple(domain);
 
         public override string ToString()

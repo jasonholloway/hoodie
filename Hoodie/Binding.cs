@@ -1,17 +1,16 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace Hoodie
 {
-    public class Binding
+    public class Binding : IEquatable<Binding>
     {
-        private readonly ImmutableHashSet<Port> _ports;
+        public readonly ImmutableHashSet<Port> Ports;
         public readonly Domain Domain;
 
         public Binding(ImmutableHashSet<Port> ports, Domain domain)
         {
-            _ports = ports;
+            Ports = ports;
             Domain = domain;
         }
         
@@ -27,9 +26,7 @@ namespace Hoodie
             : this(ImmutableHashSet<Port>.Empty, Domains.Any)
         { }
 
-        public IEnumerable<Port> Ports => _ports;
-
-        public Binding AddDomain(Domain domain)
+        public Binding WithDomain(Domain domain)
         {
             throw new NotImplementedException();
         }
@@ -38,10 +35,16 @@ namespace Hoodie
         {
             throw new NotImplementedException();
         }
-        
-        public static Binding Empty = new Binding(ImmutableHashSet<Port>.Empty, Domains.Any);
+
+        public static readonly Binding Empty = new Binding();
 
         public static Binding Merge(Binding b1, Binding b2)
-            => Binding.Empty;
+            => Empty;
+
+        public bool Equals(Binding other)
+        {
+            //TODO should have unique ids, as with domains - though, couldn't we just do a reference comparison???
+            throw new NotImplementedException();
+        }
     }
 }

@@ -1,0 +1,448 @@
+
+envs aren't ordered; but they have to be ordered if we conceive them as being nested
+there always has to be an env that contains other envs
+
+well, there always has to be an env that we have at our fingertips
+we have the graph, and we want to know what values there are against a port
+but this is only an index; it's only an index that we need at this level
+(though what is a graph but an index of bindings anyway? - nothing more)
+
+so it's completely unavoidable that information needs to be collected and made available up front
+
+when two graphs collide, then their structures are retained  
+but only if there are choices involved
+
+x=Int
+if(y=1) x=1
+if(y=2) x=2
+y=Int
+
+{
+  x:Int
+  y:
+    (1)< E{x:1,y:1}
+	  (2)< E{x:2,y:2}
+    (Int)< E{y:Int}
+}
+
+
+y=2|3
+
+merge with { y:2|3 }
+
+{
+  x:Int  
+	y:(2)< E{x:2,y:2}
+    (3)< E{y:Int}
+}
+
+propagate
+
+`x` can't be resolved to 2|Int
+because it's possible for it to be 2, without y having caused it to be 2
+the value of x does not narrow the value of y
+
+-------
+
+so this collecting together of values in subgraphs - does it even make sense?
+not really, if there are other values available, then they will remain available, no matter what restrictions subgraphs have
+
+though, as with solving a sudoku grid, constraints in one place can in fact constrain elsewhere - but this is not a primary functionality
+
+as the graph would still work even with us being able to assign whatever we liked to unconstrained values
+
+well it would work locally, but it wouldn't filter out unrealisable subgraphs then
+
+-------------------------
+
+{ y: 1|2|3 }
++
+{ t: y>1 }
+
+=
+{
+  y: 1|2|3
+	t: y>1
+}
+
+/propagate/
+actual trigger to propagate is binding of two `y` vars, which is a merging of a bind
+
+the changing of this binding will propagate through the `>` operator; though via the disjunction of 1|2|3
+
+this will push through to the `t` var, and in lapsing back to the root will return this env, or this series of envs:
+
+{
+  y: 1
+	t: false
+}
+
+{
+  y: 2
+	t: true
+}
+
+{
+  y: 3
+	t: true
+}
+
+each one of these is returned as one part of a disjunction
+
+across the disjunction, and therefore across the entire graph, these hold true:
+{
+  y: 1|2|3
+  t: false|true|true
+}
+
+to consolidate the trues, we should be able to sum the two hinterland envs they point to *******
+although we could suffer with the multiplicity for an mvp
+
+
+
+
+
+
+{
+	y:(1)|(2)|(3)
+	t:y>(1) : 
+}
+
++
+
+{ y:(2) }
+
+=
+
+{ 
+  y:(2)
+	t:y>1
+}
+
+propagate
+
+
+
+{
+  y   : 1|2|3
+  t   : false|true|true
+  y>1 : t
+}
+
+
+
+
+
+{ a: 1|2|3 }
+
+a binding is introduced with a certain domain, encompassing `a`
+
++
+
+{ a > ? = ? }
+
+another binding, attaching `a` to the first leg of `>`
+
+domains of `any` and `1|2|3` are muliplied, giving back `1|2|3`
+the portsets are combined, and now the propagation
+
+each domain of `1|2|3` is propagated to the first leg of `>`
+each time we get the same back as before, even with the same env: no change
+the propagation also goes to the leg of `a`, but gets the same short shrift
+
+{
+  a: 1|2|3
+  a>(?)=(bool)
+}
+
+each of the disjuncts under `a` has a simple env with only its own binding
+
+----
+
++
+{ a>?= TRUE }
+
+a new binding of the output port of the comparison with `true`
+in being merged together, only the binding against the output port is modified, from bool to true
+
+{
+  a: 1|2|3
+  a>?= true
+}
+
+(in adding, we must always choose one subgraph to be the root - linkages aren't bivalent, ie a nested subgraph has no explicit links to the outer)
+
+/propagation/
+
+the novelty is all in the final binding against `=`
+true will propagate from here, its nest, and bother firstly the `>` relation
+an impulse of `true` will do two things simultaneously: it will use each disjunct on the first leg to create disjuncts on leg two
+and it will try to combine `any` with leg one's disjunction: this is the identity operation however, yielding no change
+
+---------
+
+{ a: 1|2, b: Int }
+
++
+
+{ 
+  a: 
+    1 => { b: 3 }
+    _ => {}
+}
+
+merging the above 
+in both, `a` is a disjunction; cartesian product pleasey please
+
+{
+  a: 
+    1 => { b: 3 }
+    2 => {}
+  b: Int
+}
+
+and now we must propagate...
+
+where do we start from? the one binding that has changed is on `a`
+and so we must propagate outwards from `a`
+
+if a is 1, then the `=>` operator guarantees the same domain, but with a full env in return
+
+this env must be multiplied in, but only via a disjunction
+b is multiplied in; starting from Int, it becomes Int|3, which is then sorted to be 3|Int
+
+after propagation, each disjunct encloses a full separately-merged world
+
+but - we also want these possibilities to appear as disjuncts on other members
+
+*we merge the root into the disjunct, and the disjunct into the root*
+
+it's a two way operation, and there are symettrical modes of merging
+
+when merging the root into the disjunct, each and every disjunct of the root is merged in, with the entire binding of each port multiplied in
+if the root has a never against a port, then the disjunct must also have a zero binding there; portsets are unioned, and domains multiplied
+
+but how does it go from the disjunct into the root?
+each binding of an env should be summed to give the root a panapoly of options at each point
+
+when merging into the disjunct, all is good as everything is always narrowing again - all changes will narrow
+but when merging out of a disjunct, I suppose everything is still always narrowing, only with a maintenance of structure unnecesary in merging upwards and in
+
+repeatedly propagating into and merging out of a disjunct will create a repetition of disjunct domains peppered about
+old obsolete envs and domains will be strewn
+
+which is interesting, put like that... almost as if, when we merge out of a disjunct, we should also know the env that has been replaced...
+all disjuncts against that particular env should be zapped, via enumeration of all bindings and all envs
+
+an obsolete env should be purged, before adding afresh the newly returned env
+
+if a subgraph is entirely new, there will of course be no env's bindings to remove
+
+can we say, in propagating and merging binding by binding, each possible purgable will be met anyway
+so we don't have to enumerate and replace specially (which would cause us to copy the entire lot even before merging)
+
+------
+
+if a binding in a subgraph is now never, we will add never as a disjunct possibility to the port as it appears in the root
+the disjunction allows the never to sit without interfering with its siblings; all is safe and stable
+
+-------
+
+what though of /portsets/???
+
+when merging into a disjunct, 
+then the portsets must be added together, unioned; when merging down into the root, the portsets aren't combined, just as the domains aren't actually combined
+
+merging down and merging up - are they transitive, ie repeatedly applicable?
+
+after merging down, is there propagation to be done? unsure
+
+when a valve has been opened, ie when a new value has propagated into a disjunction that is activated by it, 
+then it parries the domain, but also provides an entirely new subgraph 
+
+
+-----------------
+
+{ a: 1|2, b: 3|4 }
++
+{ a: Int, b: Int|Float }
+
+so, firstly we merge up
+
+{
+  a: (1&Int) | (2&Int)
+  b: (3&Int) | (3&Float) | (4&Int) | (4&Float)
+}
+
+and now each disjunct needs propagating, but propagating does nothing, as variables by themselves accept anything
+
++
+
+{ `a < b = true` }
+
+this ternary relation is happily in its own subgraph first of all
+both `a` and `b` are bound to `any`, though with a dependency between them represented by the `<` operator itself
+
+but then we add it in
+
+firstly we merge it, with little effect because of the `any` domains
+
+{
+  a: 1|2
+  b: 3|4
+  `a < b`: true
+}
+
+but now, each affected binding (and that is, the `a` and the `b`) will be propagated out
+
+firstly, a=1
+{ a: 1 }
+
+is already its own small env, with an `a` binding connecting to the recently merged `<` operator
+the other end of that operator will be bound to both 3 and 4, by delegation to the root env
+
+our propagation begins at the root, and in choosing between disjuncts we gather our stack of envs
+new bindings formed as we go are not persisted back to the root however; they leave their trace only in the env of our path
+
+{
+  a: 1
+  b: 3|4
+  `a < b`: true
+}
+
+we propagate from a in this sub env, and find nothing wrong with the binding against `b`
+though we do by this means implicate the `b` binding of the root, we don't actually change it, and so we don't have to bloat the current layer
+
+this propagation forms a subgraph that hangs off a's disjunct
+
+and this subgraph as it returns to the source of propagation, is applied to envs across the root
+
+--------
+
+but the subgraph itself will have its own subgraphs;
+if there is a part of the subgraph untouched by the propagation, say if there is no change, or for some other inscrutible reason,
+there may be a value in the subgraph formed by the propagation that is its own subgraph
+
+in fact this will always be the case
+
+{ a: 1|2, b: 1 } 
+a's disjuncts are both here subgraphs,
+as is b's single value 1
+
+
+{ a: 1|2, b:2|3 }
++
+{ `a<b`: true }
+
+first merging, by which we get
+{
+  a: 1|2
+  b: 2|3
+  `a<b`: true
+}
+
+now we propagate from every changed binding, which in this case is all of them
+propagation proceeds from each disjuncts env, with recourse to root bindings if others are unspecified
+
+althgou, in the merging phase, portsets will have been combined: each disjunct will already have a nicely combined env
+basically, there shouldn't be any need to defer to the root, as deference to the root has effectively already been done
+
+but - bindings the other sides of operators won't necessarily be included in this, and so some deference in propagation will have to occur
+this is when there are no local bindings: in this case we infer `any`, which could have been merged from root so as to project each binding of the root
+to the subgraph, but this would be very wasteful when we can delegate instead
+if there is not registration for a port, then we defer below, and we keep on deferring below until we get to the bottom of the stack; then we default to `any`
+
+so, merging does the same thing as delegation, but the latter is an efficiency saving for the former
+
+so, we propagate...
+each disjunct in this case will have an expanded, updated binding, including one of the legs (but not both at once) of `<`
+a's disjuncts will both have expanded bindings attaching `a` to the first leg of `<`
+b's disjuncts will be the same, but attached happily to the second leg of `>`
+
+the implicit connection between these two bulkheads is the self-ruled operator `<`, which only links the two via propagation
+
+so now we propagate (as forewarned!)
+a has changed, let's enumerate its disjuncts, triggering updates
+a=1,
+1<(2|3)=true (b and =true courtesy of root delegation)
+all happily sit in that relationship, non change, no new bindings registered
+in fact nothing has changed at all; we still have the env we took originally from the disjunct
+and we return the same to the root
+env has not changed, so lets skip any downwards percolation
+
+a=2
+2<(2|3)=true
+the `<` op must now change the binding of `b`: this though summoned from the root is now stashed in the subgraph
+and we return to the source and percolate, this time with an improved env
+for each binding in the env, we find bindings in the root with the /before/ env and replace them with disjuncts from the new one
+this gives this, with two separate envs offering b:3, plus the two original disjuncts of b
+{
+  a: 1|2
+  b: 2|3|2|3|3
+  `a<b`:true
+}
+
+actually it feels here like we should do all the propagations before we do percolations
+this would avoid re-propagating the already-propagated
+each disjunct will be independently explored
+and only at the end will the different options be laid out
+
+propagation brings back its fruits, which are then put on display
+but, after each propagation, old obsolete disjuncts are cleared, and then the next non-obsolete disjunct is found to propagate from
+this should stop us propagating the same env from multiple directions
+
+with this strategy, the propagation proceeds as follows:
+{
+  a: 1|2
+  b: 2|3
+}
++ (from a...)
+{
+  a: 1|2
+  b: 2|3|3
+}
++ (from b...)
+{
+  a: 1|1|2
+  b: 2|3
+}
+=
+{
+  a: 1|2|1|1|2
+  b: 2|3|2|3|3
+}
+
+some of these will be structurally identical
+if there was some way of culling these (As there should be) we'd get this:
+{
+  a: 1|2|1
+  b: 2|3|3
+}
+which would be a true concise representation of the possibilities at hand
+
+also of interest here, is the thought that we don't keep the original root graph at all: we project in one direction only, not percolating or merging down,
+but projecting forwards, stepping on, as in a pipeline
+we're all about forming brand new subgraphs and a brand new root graph
+
+though this would lack some of the space savings of the immutable data types
+what about nodes that don't change in an addition to the graph? it seems wrong that these should be copied the same as nodes that do change
+
+but it is a merging forwards: firstly we merge into affected subgraphs, then we merge forwards into a new root graph, taking advantage of the new subgraph nodes
+
+a better metaphor than up or down
+
+also a question: do we need to go around deleting old disjuncts first? answer - yes
+because in the same binding, some disjuncts may need to change and others not; this is part of the stepping the root graph forward; we replace what we need to and nothing more
+
+-------
+
+
+
+
+
+
+
+
+
+
+

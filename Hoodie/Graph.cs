@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Hoodie
@@ -43,12 +42,19 @@ namespace Hoodie
                 return (env2, select(v));
             };
         
-        public static Graph<IEnumerable<TResult>> Select<TSource, TResult>(this Graph<IEnumerable<TSource>> source, Func<TSource, TResult> select)
+        public static DisjunctGraph<TResult> Select<TSource, TResult>(this DisjunctGraph<TSource> source, Func<TSource, TResult> select)
             => env =>
             {
-                var (env2, vals) = source(env);
-                return (env2, vals.Select(select));
+                var (env2, v) = source.Invoke(env);
+                return (env2, select(v));
             };
+        
+        // public static Graph<IEnumerable<TResult>> Select<TSource, TResult>(this Graph<IEnumerable<TSource>> source, Func<TSource, TResult> select)
+        //     => env =>
+        //     {
+        //         var (env2, vals) = source(env);
+        //         return (env2, vals.Select(select));
+        //     };
         
         public static Graph<TTo> SelectMany<TFrom, TVia, TTo>(this Graph<TFrom> source, Func<TFrom, Graph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
             => env =>
@@ -104,6 +110,12 @@ namespace Hoodie
                     var to = resultSelector(@from, via);
                     return (viaEnv, acTos.Concat(Enumerable.Repeat(to, 1)));
                 });
+        
+        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this IEnumerable<TFrom> source, Func<TFrom, DisjunctGraph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => throw new NotImplementedException();
+        
+        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctGraph<TFrom> source, Func<TFrom, IEnumerable<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => throw new NotImplementedException();
 
         public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctGraph<TFrom> source, Func<TFrom, DisjunctGraph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
             => new DisjunctGraph<TTo>(env =>

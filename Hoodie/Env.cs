@@ -8,7 +8,7 @@ namespace Hoodie
     public class Env
     {
         private readonly ImmutableDictionary<string, Var> _vars;
-        private readonly ImmutableDictionary<Port, Binding> _binds;
+        private readonly ImmutableDictionary<Port, (Env, Binding)[]> _binds;
 
         private Env(ImmutableDictionary<string, Var> vars = default, ImmutableDictionary<Port, Binding> binds = default)
         {
@@ -20,12 +20,12 @@ namespace Hoodie
             : this(ImmutableDictionary<string, Var>.Empty, ImmutableDictionary<Port, Binding>.Empty)
         { }
         
-        public Binding SummonBinding(Port port)
+        public IEnumerable<(Env, Binding)> SummonBinds(Port port)
             => _binds.TryGetValue(port, out var binding)
                 ? binding
                 : new Binding(port);
 
-        public (Env, Binding) PutBinding(Binding binding)
+        public (Env, Binding) PutBind(Binding binding)
         {
             var newBinds = _binds.SetItems(
                 binding.Ports.Select(p => 

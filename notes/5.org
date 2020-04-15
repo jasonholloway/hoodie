@@ -1,0 +1,37 @@
+
+little dependent worlds of bindings
+
+a dependent world overlays bindings, could even include new ports in binding
+
+but then these are branches accessed via disjuncitons...
+
+nothing new
+
+------------------------------------
+
+except, little encapsulated worlds are hidden, whereas here we percolate all outwards,
+so that from the top, we can see all bindings against every port
+
+encapsulation, of course, protects us from combinatorial explosion
+
+but it requires programmer involvement
+
+there'd be envs then, interlinked, but without visibility, well hurrah
+
+------------------------------------
+
+so we are where we were before
+
+ports are related to bindings in a global env
+
+each binding is then related to a set of disjunctions
+in a local stack of envs
+
+maybe ports can be the same however: different ports bound in different branches;
+
+this would allow different variables to be attached in different circumstances then
+
+
+
+
+

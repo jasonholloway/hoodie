@@ -1,0 +1,402 @@
+
+
+*Envs naturally have a tree structure*
+So what we might see as two noses in a disjunction pointing out at us
+are actually just two tips of a common branch
+
+but as the new domain ripples back down the tree of envs, what was the common root now has updates from two directions to handle
+the disjunction looks back into the root; how can it not create a new disjunciton in the root?
+
+because the root was consistent before we added our new operation
+but some nodule of uncertainty made for a branch just beyond this area of certainty
+which we are now revisiting
+
+and as its two children now report back, presumably with different values, how can it not be split?
+but if the same domain is sent to the same domain on the same binding... then that is the same, we only need to explore once and serve the same to the two callers
+
+-----
+
+at the moment of disjunction, there is no root that we know of, only paths to follow;
+and these paths certainly do converge, meaning that we don't have to duplicate propagation through these
+
+in fact, if we do duplicate this pursuit, we go through the entire graph with a rotorvator, slicing it up into a million duplicated strands
+
+in following back, we could possibly cache applications, keyed by env and binding and domain
+otherwise, we could 'zip' by propagating breadth first, and match by step, by generation
+
+but that relies on fortuous coincedence to match: we want matching to always happen, we want to keep the graph in good order
+though - as possible domains are pooled, can we combine and simplify them at that point? well, no - we can't, as long as the envs are distinct,
+which they would be, unless we structurally compared them all
+
+maybe we don't have to unite them if they don't appear twice in the first place
+how would they not appear twice? because the same env is not revisited without the cache
+
+but - to give ourselves this guarantee would require a cache to be maintained, stored alongside the graph
+actually, maybe the cache only needs to be maintained as we propagate
+
+in a propagation, we need a cache; but the cache is only necessary as we propagate
+the cache doesn't get saved with the env as all its contents are better stored in place
+
+as a propagation proceeds, as it meets more and more env/ports, the cache grows; and the cache sloughs off its layers as we retreat
+
+------
+
+what happens as we retreat? domains are ascertained, disjunctions gathered together, envs are stored in place in the disjunction
+but do the envs get folded back into the root env? they should be, in their way, but how exactly...?
+
+the env gets captured in the disjunction of course...
+
+but it also needs to be merged into the bindings of other ports too...
+
+when each env is returned, or when all envs are returned, all the bindings of the returned env should be added to the bindings of the current env
+
+though bindings are against ports; and bindings have no choice of ports: each binding is just a set of ports with some disjunct domains
+
+here we're imagining a choice of portsets on each binding; which is fair enough
+
+so a binding has a set of ports, and each set of ports has a set of domains
+
+why are sets of ports at the top? what we care most about are the domains I feel
+BUT the set of ports goes with the env
+
+if you were to choose from a disjunct domain, selecting one of its envs, then you could summon the portset from the env directly
+what else can you do? this means that the ports, which are currently singular and on top of the structure, will be enmeshed within
+at the top of the binding we have a disjunction, keyed by domain; but - what does the binding give us if it just wraps the disjunction?
+
+port -> disjunction -> domain -> (env, portset)
+
+------
+
+A recap to refresh
+
+when we 'get a binding' of a port, we are really getting a set of choices, a disjunction
+
+if there is no explicit binding, then there should be a disjunction of 'any', which isn't empty (that would be 'never') as it still has ports
+it's not without information, but it doesn't have a domain constraint, which is interseting
+
+emptiness of disjunction => never
+emptiness of domain => any
+
+in fact, Any is the root domain - it's not just emptiness, just the common ancestor of all, the base class effectively
+
+-------
+
+is it really true that in different envs, there will be different portsets on ports?
+
+won't this mean that the root env, from which we start, will have none? yep seems so
+but we want the downstream possiblities to advertise themselves nevertheless
+
+the problem with this is that won't the old world of partial bindings get captured then?
+as soon as we've added a binding, that is a definite fact; and bindings can't be removed, oh no they can't
+
+because we're accumulating envs, adding a new binding should ripple through all of them, new and old alike
+i'm coming to the conclusion that there are no separate portsets; there is only one portset on each binding,
+and it has so many possible domains, each one with a link to the world in which that makes sense
+
+so, simpler bindings hurrah - as we were.
+
+--------------------------------------------------
+
+bindings are as they always were, but...
+we have the cache of course
+and envs must be merged
+
+how to merge envs?
+go through every port and merge the bindings
+but won't there then be envs that receive the same bindings repeatedly?
+
+or even, how will that merge happen, and on what?
+
+it has to be by port, because they are the entries we have in an env
+
+what does a port have? bindings to not just domains but other ports
+
+in merging, we merge portsets and domains then
+domains being domain disjunctions
+
+eventually then as me recede downnstream all possibilities will be pooled
+
+-------------------------------------------
+
+        //instead of the very wrong prebinds...
+        //well, we have existing bindings and domains
+        //we want to summon all the current bindings in play
+        //merge them (very cheap if all the same or only one of them)
+        //
+        //and mix in whatever simple domains we have (what about disjunct domains here?)
+        //all 'hard-coded' domains should also give us envs in which they have taken over for this binding
+        //but, none of this may matter as everything gets merged into one, losing its structure anyway
+        //
+        //by binding all our bits together, we shouldn't lose any structure at all (though previously this was the conception)
+        //because disjunctions should preserve everything
+        //but we merge a cartesian product of the possibilities, yikes
+        //
+        //so we summon the bindings of all ports
+        //and we merge them together
+        //this creates a binding in which each disjunction of each port is merged with the disjuncts of all others
+        //giving us a combined disjunction
+        //this is then put, so that downstream propagations will know of it 
+        //
+        //though - the choosing of a disjunction will cover this need anyway; as soon as a domain is chosen, we enter a world in which that domain is simply
+        //bound to the port - a lovely simple binding
+        //
+        //this means, in dealing with disjunct domains, we don't need to persist /anything/ till we've dealt with all disjunctions: we bring them together into an initial
+        //crucible, then we explore, then as they all slink back, we gather up their worlds into a new disjunction
+        //which happily simplifies the below
+        //
+        //true|false * never = never
+        //a|b * c|d|e = ac|ad|ae|bc|bd|be
+        //a|b|c * d = ad|bd|cd
+        //
+        //but what of the attached envs?
+        //its like, in this operation, we need to also combine together envs
+        //and we're multiplying the current domain at least
+        //can we multiply together the entire graph?
+        //
+        //if the graph has different subsystems, it doesn't seem right that we can do a blanket multiplication over all ports, ignoring the structure of the graph,
+        //ignoring the meaning of our localised multiplication
+        //our multiplication is what it is - a multiplication or binding of one node alone
+        //this merging must itself propagate; which is in fact exactly what we're doing here
+        //
+        //but - an env has more reach than that - it does have pretensions to universality, in that it refers to all ports, even those in distant subsystems completely safe
+        //from our current changes; bindings of other subsystems will however be the same then, and in 'anding' them they will not change: they will refer to the same other ports
+        //with the same domains
+        //
+        //the trick is to merge the domains that we have, then propagate them, surely
+        //this act of propagation is in fact the thing that respects the true structure of the graph, that makes all consistent after the one change we're justified in making:
+        //the local, momentary one in front of us: we make that change, that belongs to us, and the surrounding consistency rules wriggle into new, consistent shapes
+        //
+        //which makes the envs tuplized next to our disjunct domains kinda pointless: all we know is what we have now, the binding our current env
+        //but our current binding is two faced, it's not simple and reassuring: it says right up, we have this world or this world: we don't have one current env at all;
+        //in gazing at a binding we have lost our past and are now dazzled by options; there is no ground here
+        //
+        //this is true when we are simply choosing; but here we are melding together two sets of choices
+        //
+        //a=1|2, b=3|4
+        //
+        //i'm not even sure if each disjunct should only offer its one domain, as each will presumably have an opinion too on the other;
+        //but in combining them, we are dislodging their other opinions; except for the fact that we must be combining them: there is no removing, only an increasing connectedness
+        //no distinctions and cuttings off...
+        //
+        //we are forcefully binding two things here: we are adding links, adding relations, constraints
+        //this can be simplified again to: we are combining bindings
+        //all parties of one input binding become parties to the common output binding
+        //
+        //two unary bindings brought together:
+        //(a: 1|2) & (b: 3|4) 
+        //(a,b: 1&3|1&4|2&3|2&4)      [of course all these combine to 'never']
+        //
+        //but again, what of the envs here? the domains can be multiplied within the disjunctions, but what of the concomitant envs??
+        //
+        //the envs are combined by propagation, which is the entire point of the app, the centrepiece
+        //they're combined by joining the domain, and seeing what happens
+        //but seeing what happens in what? we have multiple worlds in which things happen
+        //
+        //do we have to bind in both directions? but there's no parallelism in the current binding at least - there is only one pivot point
+        //in other bindings, those not welded together with violence, it seems that we two imperfect options
+        //
+        //it's like even in evaluation, we don't simply have one env, we have a disjunction of envs we are investigating at once
+        //these disjunct envs are then, through their exploration, whittled down; perhaps they are even unified as env/binding combos are detected as identical
+        //
+        //that's that then: the bicameral mind; we never have just one env, but a Disjunct<Env>
+        //this is what we are actually operating on the entire time, not just Env
+        //
+        //---------------------------------------------------------------------
+        //
+        //Envs only get combined by exploration and annihilation
+        //is this even true?
+        //
+        //in combining two bindings, the idea now is that the actual domains get combined
+        //but, as each domain will be partnered with a specific env (the environment of the computation of that domain)
+        //these domains cannot be so easily combined; in fact they are combined by changing the domain and by propagation
+        //
+        //if we have two domains exactly the same, but computed via different environments, we can't just ignore the iceberg roots
+        //as such, what is the point in the domain being extended to us? because they must mate; the domains must combine,
+        //so that the worlds behind the domains can be brought together
+        //
+        //as is though they can only be brought together by annihilation, as they are disproven
+        //which is productive, though surface disjunctions could be simplified to be exactly the same, and yet, because we have to abide by the disjunction
+        //at the top, we will duplicate, triplicate, quadruplicate computations
+        //
+        //it's almost like the exploration shouldn't be all driven from the very top; instead we could proceed having chosen a disjunt domain, carrying the problem with us,
+        //and retaining the possibility throughout our travels of solving problems locally
+        //
+        //we would then go into the binding with a Disjunct<Env>, though with the domain ready combined (hardly)
+        //------------------------------------------------------------------
+        //
+        //so the domains are mated, which flattens them out
+        //
+        //why again are they mated? because we have violently bound them: we have said 'you are bound!' and that's that
+        //as such, we know that their domains must be brought together; the existing domain is proven to be possible, it is real as can be
+        //but after the binding... then we need to ripple out the domain cataclysm
+        //
+        //the combining of the domain is the seed fact of the binding: it just must be the case that two of the domains are brought together
+        //but this still leaves us with a choice of envs to take up
+        //
+        //Disjunct<(Disjunct<Env>, Domain)>
+        //though this could be flattened into
+        //Disjunct<(Env, Domain)> for simplicity, which is our starting point
+        //
+        //and as we take up a choice, we enter an Env where all is a certain way; but now we have narrowed the domain by combining it; and so now we put the new narrower domain
+        //onto the binding of our chosen env, and the propagation goes outward; and as soon as we make this binding, the repercussions continue; albeit in a slightly simpler world
+        //now that we have made a choice; and eventually, eventually we will have propagated enough to come to some decisions
+        //
+        //(1a|2b|3c) * (4d|5e)
+        //
+        //(1ad|4ad|1ae|5ae|2bd|4bd|2be|5be|3cd|4cd|3ce|5ce)
+        //
+        //what's difference above between scenarios 1ad and 1ae? both occur in same env, but with different initial domain
+        //or 5ae, 5be and 5ce? ae be and ce might all be exactly the same, of course, which means we can unify them up front
+        //
+        //not sure what else we can do here, but the more simplification we can do up front, the better
+        //
+        //one thing - the narrower a domain, the more likely it is to be impossible; but... none of the paths have any effects on any of the other paths it seems
+        //propagations are lonely processes that only ever branch, becoming ever more lonely all the time
+        //
+        //---------------------------------------------------------------------------
+        //
+        //disjunct domains can be directly used by some operators however; and so it isn't always necessary to explore all options top to bottom: the problem can be passed on
+        //for instance `==` knows for certain that an entire disjunct domain at one leg means exactly the same disjunct domain at the other leg; the possible values of `result`
+        //can be take from that easily enough
+        //
+        //this approach contrasts with pursuing domains independently in parallel, intangent worlds
+        //it's computing en-masse, by batch, with great efficiency savings
+        //
+        //so - a ripple would be given an entire disjunct domain to process; would it include envs in this? presumably, yes. Each env in the disjunction would have to be set as the disjunctive domain is
+        //passed from locality to locality
+        //
+        //though again here how much simpler it would be in this case if an env stored the entire disjunction; we would only store the disjunction therefore once
+        //
+        //------------------------------------------------------------------------------
+        //
+        //another thought from last night:
+        //all these paths are because we want to precalculate everything up front
+        //and we've already admitted the need for laziness in some situations to ourselves
+        //
+        //for instance, large sets of strings, are presented as an opaque range
+        //operations on this opaque range aren't done by treating it as a big disjunction (though it could be treated as such)
+        //eagerly such an operation would produce and propagate OneOf(Set) - an unchosen instance of the set
+        //and further operations on it would narrow down that domain by layering operations onto it
+        //
+        //but how can we narrow down results then? maybe - instead of attaching the operation to the domain, the operation is actually given
+        //to the underlying set to work with; the set can then decide if it has members in it suitable for the condition
+        //
+        //-----------------------------------------------------------------------------
+        //
+        //more thorough-going laziness: we only mark bindings as having possible domains as we pass; we don't store envs with them
+        //(envs are passageways into actual computations, linking disjuncts to disjuncts)
+        //but if we weren't remembering which disjuncts go with which disjuncts, then wouldn't we have to deal with every disjunct on every change?
+        //yes, but this is already the case: when we make a change it is to the root, and we still enumerate all possibilities
+        //only the enumeration all happens from the top
+        //
+        //if we forgot envs, and just accumulated domains on bindings, then entire disjunct domains would be propagated
+        //(a|b|c) would be passed to the port as a whole given a new binding, and the relation would be able to merge these domains via its internal propagation
+        //logic: for instance it would know that both a and b produce true on the other leg, and only c false - which would propagate on as true|false
+        //instead of true|true|false on the original scheme - by completely separating at the top, bunching was made impossible elsewhere
+        //we have to allow other relations to bunch as they see fit
+        //
+        //though it is true that the harsher separation of envs does bring with its own savings: each individual env should be considerably simpler than by bunching
+        //maybe if envs could be detected as being the same, then some kind of additional saving could be made? 
+        //unsure about this: approaching it properly, envs are structured as trees; if we were to ripple back through them as suggested,
+        //this tree-structure shouldn't be ignored, ignorantly flattened: this is what creates unnecessary work for us, the fact that we've forgotten we're working on trees
+        //each env has a (weakref) parent env, which has a parent env, etc: as we ripple through, we actually ripple through all envs of the disjunction at once
+        //
+        //ENVS ARE TREES MATE
+        //ripple back to and via common nodes is the way
+        //
+        //----------------------------------------------------
+
+so straight away we're back at questions
+
+about what? can a domain have multiple envs? seems reasonable
+bit better than storing a bare tuple then is to group them on the disjunction;
+so a disjunction has two levels of lookup: multiple domains, multiple envs
+though - what do we gain from having multiple domains here? not much but an added layer that could otherwise be kept flat
+
+the domains are a means to mixing: they are the nose of the env, poking through; they can be merged and filtered before we even enter the env
+
+--------------------------------------
+
+two subtly different envs, in the binding of a single `!=` relation
+
+on the first port, the first env; on the second port, the successor to the first
+
+though it doesn't matter in this simple case, because the two envs are sufficient containers: neither binding needs to know about the other
+
+----------------------------------------
+
+
+when choosing a disjunct, we're not adopting an entirely new world from the disjunct and living in this past, obselete frame
+
+instead, we're simplifying the history of our current frame, we are choosing one of several fibres of possiblity on which our current env rests
+this choosing of a historical disjunct can only remove possiblities from our current graph, not domains can change outside of this cull
+
+the structure of envs is then made up, not just of a series, a tree of updates on updates, but also by certain cross-cutting disjunctions,
+like utility pipes or the cutting of an underground railway
+
+certain domains are then linked in envs in which these linked domains are simply bound, not by disjunction; but then these subenvs are multiple,
+and feed into later envs by being 'or-ed' at the proper points
+
+----------------------------------------
+
+
+so an env is like a JQuery selector
+
+so many simple worlds to choose between
+
+a simple world without disjunctions is comprehensible as a flooding of deduction
+we have to think of there being a great multiplicity of these
+
+but with 'lazy' disjunctions that begin and are maintained for as long as possible as consolidated ranges
+
+the selector then contains so many disjunctions at the top level (we can even use this aggregate number as a metric)
+but each world within is simple, distinct
+
+in applying a binding, we apply it to each world in turn
+
+-------------------------------
+
+some worlds will however have common roots: this though is possibly the province of the immutable library only?
+
+except that some propagations could be done on the common root
+instead of repeating just because a leaf node is true/false with no consequence
+
+which moves us back to the idea of embedding the disjunctions
+
+it's just that these embedded envs go out of date; they need to be meticulously updated
+it's like the env advertised at a disjunction isn't an immutable one, but a pointer to a live body of data
+(though this body of data is actually itself immutable: it is a reference to an env)
+
+as we go through the graph, loading different envs, we will therefore repeatedly reload the same env, menaning we won't find obsolete bindings
+
+--------------------------------
+
+but - all envs must be kept up to date, in as much as they need to be
+
+when we add a binding, it needn't register in every world, only in those affected, 
+the application across worlds is done by the propagation itself
+as we find references to different worlds, we split and apply to all of them at once
+
+the innovation now is that disjuncts reference env structures
+and that these references are free floating, so that they include the latest of each
+
+---------
+
+the choice as ever is between two ways of doing it - one simpler though less efficient as it encodes less,
+the other more plump yet lean, high fidelity to the real structure
+
+the problem with the second is how to set it up
+an innovation was the floating reference to an env - I need to follow this through again to see if it solves problems, makes easy sense
+
+------------------------
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,152 @@
+
+each binding has its set of ports, and a disjunction of worlds with domains
+
+
+these disjunctions are like wormholes, connecting domains of different bindings; as you choose one in one place, by following it you find yourself only meeting other domains that match it
+
+or like the sideways growth of mycelia; a root system beneath the floribund moss
+
+and eveything here feels right again
+
+the problem was that in adding constantly to a new env we were obscuring old ways; which was fine until we looped on ourselves
+at this point of rediscovery, we would expect to find our own tail, not that of a past computation
+this can be solved by indirection and mutability as always
+
+------
+
+without the indirection
+a propagation must carry araound its own accumulating envs; this way when it circles round it finds itself again as it has stored all its bindings in its envs
+
+the problem here was with the idea of storing an env with the disjunction; when the choice is made, the found env is supposedly taken up;
+but in being taken up like this, the existing history of the propagation is lost, we leap back into time
+
+instead it seems that in making a choice the existing env should be simplified in some way; an old part of its complexity is ironed out after the fact
+this is what we need instead of blind adoption
+
+how can such happen apart from propagation?
+
+we are thrown back again towards the dream of having disjunctions not traced on every binding (except for in the root env that must represent all disjunctions at every point)
+but actual separate worlds in which bindings are as simple as possible
+
+once we choose a world in one place, the rest must become much easier
+
+----------------
+
+so the existing env must be carried around; 
+and the choosing of disjuncts must have some effect on the current, carried-around env
+
+this effect can be via propagation
+but just relying on propagation, on consolidating disjunctions at every point, loses and doesn't take advantage of information we have at hand
+in first binding ports
+
+if we accept disjunct worlds, we can even 'quote' bindings so that portsets are different per world
+conditional constructions could be made - if this is this, then that is that kind of thing
+
+we can then enter different subworlds by choice
+
+but then each disjunct only stores a marginally-different env, different only in how it stores the one disjunct's domain
+though in it sfurther propagation, everything touched by that one dijunct's domain should be stored in the env on the way back,
+as all is settled; the final settled env is then the one that is stored in the disjunct before we yield back to the source propagator
+
+the weakness again with this is circularity
+
+we can't rely on propagation to fold in the choice into our current env, as it involves throwing away our current env
+accumulation must continue across the permutation; it can't just be donw one return, as at the tip the understanding is that we're still in the same, current world of bindings
+
+-------
+
+so with our env we choose a disjunct; the hope is that by choosing this disjunct we simplify the graph for ourselves, but still have access to the latest bindings;
+everything that is bound in a world with other worlds as its descendents, should be applied to its inners also
+though reapplying, repropagating into each involved subworld is laborious
+
+so - as we consolidate envs, we don't just consolidate domains, but also their subworlds
+
+adding a binding to the root should affect all subworlds
+
+won't all bindings be attached to the root first?
+I think this is true
+
+and through this bindings entire subsystems can become unbound, disappearing into the night; as they are zapped, their nothingness propagates not just back towards us,
+the zappers, but also via a warren of side-holes back to the root in other parts
+
+but then this zapping proceeds, as ever, in the present env of the propagation
+it can ultimately clear out all affected in the current env
+but then, as the env falls back to the root, how can we remove the original disjunct - all we have is an empty disjunct and an original env
+a kind of replacement maybe - in place of this domain with this precise env, replace with - nothing. could work perhaps
+
+----------
+
+again, the lovely thought of parallel worlds, narrowing our concerns at every point, comes a cropper when we think of updating our upstreams
+
+when we choose a disjunct, we are choosing a disjunct. Context: in any choice, we are streaming changes through the graph, and so 'downstream' is certainly justified
+
+isn't it then strange for a downstream propogating to stream back to the top via some hidden wormhole? why not a kind of trampolining whereby
+reporting back changes to the top triggers new changes in the root: so things are shallower than they may seem: just little dolphin dives into the general mass
+each time we resurface with new findings, but without things being settled necessarily.
+
+there would still be work to do in rotavating the graph. We'd need a queue of things requiring settling; doing one would not necessarily leave us free of further settlings to perform
+
+trampoline trampoline tramploine
+boing boing boing
+
+-----
+
+but again, when a subenv is chosen, it says something about some bindings, and nothing about others
+
+are subenvs then like an overlay? as binds are set in the subenv to be more simple, they overlay and hide the more complicated aggregated root bindings below
+and so, in looking up a binding, we should have a stack of envs to summon, till we find an appropriate port binding
+
+choosing a disjunct then puts that env on the stack; it is not an entire world to itself, hiding bindings elsewhere, it simply offers overlay bindings suitable for the branch taken
+
+as we propagate, we'd be gathering an env the entire time; but if not touched by us, then we'd defer to the stack of envs
+when we start, the first env is simply that of the root env
+but with each bind, we overlay what we've decided so far
+
+as we retreat back out, our envs must percolate downwards, each env trickling into the one below it
+
+---------
+
+so we have a stack of envs
+each time we choose we place another env on the stack
+
+does this mean each piddly binding has its stack frame? On this scheme, yes.
+
+the binding of a single variable to a port would create a binding with a single disjunct, pointing to a very simple env with just that binding against that var's port
+but in the retreat again, this tiny partial env would be merged in to the root env
+
+if we were to then bind a new port to this existing binding with its existing disjunct,
+we would find the original binding in the root env,
+which would be combined with our new binding
+after this we would propagate
+
+the branch binding would receive the newly decided domain via the disjunct pointing to it; 
+and the branch would be propagated through happily
+after the branch propagation, the updated branch env would fall back through to the root and be combined with it
+
+the idea is, there will be nothing in a branch not reflected in a root disjunction
+
+--------
+
+but what about ports?
+
+different branches will have different ports in their bindings on this scheme
+
+bindings are always made at the root level; branches are only used for efficent propagation
+
+AND WHAT ABOUT PORTS?
+
+well, having enclaves hanging off conditions means a kind of mutation(??)
+
+more like, the dependent stuff can be done already (can it??)
+
+
+
+
+
+
+
+
+
+
+
+
