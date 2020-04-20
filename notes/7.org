@@ -436,6 +436,90 @@ because in the same binding, some disjuncts may need to change and others not; t
 
 -------
 
+two graphs with intersections all over; each intersection, on a balanced hypothesis, much refer to the other in both 
+
+but, then where do new bits get grafted on? onto the overall overarching graph presumably
+the implicit graph of all bindings receives a new binding
+
+each participator graph offers itself as a linkage at each binding site, ie port
+
+propagation inevitably happens from the implicit root up: and this eraches all ther subgraphs from all directions 
+
+so what's so different about this? isn't this the previous conception?
+there's still a hierarchy here - the subgraphs are freely related, but there is always the graph of graphs, which propagations should refer to in absence of any overriding binding
+
+but the bivalence...
+
+{ a: 1|2 }
++
+{ a: 1|2|3 }
+
+but here the two graphs intersect an awful lot:
+although the second allows more leeway with `a`, both must be true, and so if both are covering `a`, they must both cohere
+
+so, as all graphs are taken to be true if they exist in the same disjunct, the only ways that graphs can independently exist are:
+- by having completely separate bindings of separate ports (ie ports are independent of other ports)
+- by being separated by disjunction
+  
+the merging of intersections entwines graphs, so that relations newly hold over ports that have no bindings in the particular env
+and what can then be done but deference to the implicit overall root?
+
+when the propagation eases back, then it leaves bindings in its wake, but it's true that these bindings, that only supply the domain that we already no about - the nose -
+these bindings must also be coupled to envs; we're saying (previously) that these envs would just be the env itself; how could they link back to downstream env, which sits in
+a disjunction 
+
+it's kind of odd... in one direction we're choosing a simpler more constrained env from a selection of disjunct envs (good)
+in the other direction, we might want to propagate back to the hosting root? maybe?
+but in this case the nose is... what?
+
+a single disjunct linking to the env we are already in
+
+disjuncts are one way connectors, as long at least as relations only massage single values
+
+imagine a relation over an entire disjunction
+
+but even then, how can a single disjunction link to its holder?
+the children don't know their parent
+but they do know themselves, and can change themselves
+but as they change themselves, they must also change the enclosing disjunction to reflect their change
+
+we have this specced out already, as after a propagation all disjuncts are re-collected
+re-synched: after propagation, all disjuncts are re-synched
+
+but it seems like propagations can never go backwards on this scheme
+cos even simple linkages are disjuncts
+
+------------------
+
+loops again
+
+{ a: ?, b: ? }
++
+{ 
+  `a<b`: true
+  `b<a`: true
+}
+
+these two would actually sit ok until a value was actually assigned to the vars
+even though the two relations are blatantly contradictory
+
+---------------
+
+how are bindings structured again? there has to be a choice of portsets; and in each shared connection of portsets, there's got to be a shared choosing of domains (and envs too)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

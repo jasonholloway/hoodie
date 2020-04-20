@@ -1,65 +1,65 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace Hoodie
 {
     public static class BaseOps
     {
-        private static Graph<Binding[]> MapBindings(IEnumerable<Port> ports, Func<Binding, Binding> fn)
-            => throw new NotImplementedException();
+        // private static IEnumerable<(Env, Binding)> MergeBinds(IEnumerable<(Env, Binding)> binds)
+        //     => binds.Distinct().Aggregate(Binding.Empty, Binding.Merge);
 
-        private static IEnumerable<(Env, Binding)> MergeBinds(IEnumerable<(Env, Binding)> binds)
-            => binds.Distinct().Aggregate(Binding.Empty, Binding.Merge);
-        
-        
-        //below should prob just be graph op
+            //below should prob just be graph op
         public static Graph<Domain> Bind(IEnumerable<Bindable> bindables) =>
-            from mergables in
-                (
-                    from bindable in bindables
-                    from binding in bindable.Inner switch
-                    {
-                        Domain domain => Graph.Lift(new Binding(domain)),
-                        Port port => SummonBinds(port),
-                    }
-                    select binding
-                ).Invoke
-            from binds in PutBinds(MergeBinds(mergables))
-            from _ in Propagate(binds) //do we have to put again?
-            select Domains.Any;
+            throw new NotImplementedException();
+            // from mergables in
+            //     (
+            //         from bindable in bindables
+            //         from binding in bindable.Inner switch
+            //         {
+            //             Domain domain => Graph.Lift(new Binding(domain, Env.Empty)),
+            //             Port port => SummonBinds(port),
+            //         }
+            //         select binding
+            //     ).Invoke
+            // from binds in PutBinds(MergeBinds(mergables))
+            // from _ in Propagate(binds) //do we have to put again?
+            // select Domains.Any;
 
         //Propagates a binding through it's ports, reintegrates into the (relative) root
         private static Graph<IEnumerable<(Env, Binding)>> Propagate(IEnumerable<(Env Env, Binding Bind)> binds) =>
-            from x in binds 
-            //as soon as we have iterated the envBind, we should be sequencing using the x.Env
-            //this sounds about right
-            //this gets us back to the idea of 
-            
-            from port in x.Bind.Ports
-            from newBinds in Graph.From(_ =>
-            {
-                var w = PropagatePort(x.Bind, port).Invoke(x.Env);
-                
-                throw new NotImplementedException();
-            })
-            from newBind in newBinds
-            select newBind;
+            throw new NotImplementedException();
+            // from x in binds 
+            // //as soon as we have iterated the envBind, we should be sequencing using the x.Env
+            // //this sounds about right
+            // //this gets us back to the idea of 
+            //
+            // from port in x.Bind.Ports
+            // from newBinds in Graph.From(_ =>
+            // {
+            //     var w = PropagatePort(x.Bind, port).Invoke(x.Env);
+            //     
+            //     throw new NotImplementedException();
+            // })
+            // from newBind in newBinds
+            // select newBind;
 
         //Propagates a port, replied disjunctions are immediately adopted, all other ports are given chance to themselves propagate
         //as long as something has changed; if nothing has changed, then we should stop this recursive ruffling
         private static DisjunctGraph<Binding> PropagatePort(Binding bind, Port port) =>
-            from domain in new DisjunctGraph<Disjunct>(_ =>
-            {
-                var inner =
-                    from __ in PutBinding(disjunct.Binding.WithDomain(disjunct.Domain))
-                    from newDisjuncts in port.Propagate(disjunct.Domain).Invoke
-                    from newDisjunct in newDisjuncts
-                    select new Disjunct(newDisjunct.Item1, default, newDisjunct.Item2);
-
-                var q = inner.Invoke(disjunct.Env);
-            })
-            select domain;
+            throw new NotImplementedException();
+            // from domain in new DisjunctGraph<Disjunct>(_ =>
+            // {
+            //     var inner =
+            //         from __ in PutBinding(disjunct.Binding.WithDomain(disjunct.Domain))
+            //         from newDisjuncts in port.Propagate(disjunct.Domain).Invoke
+            //         from newDisjunct in newDisjuncts
+            //         select new Disjunct(newDisjunct.Item1, default, newDisjunct.Item2);
+            //
+            //     var q = inner.Invoke(disjunct.Env);
+            // })
+            // select domain;
         
         //again, do we need to save the binding domain up front? 
         //only if we're liable to get loops in this
@@ -124,11 +124,11 @@ namespace Hoodie
         //     select domain2;
         
         
-        private static DisjunctGraph<Binding> SummonBinds(Port port)
-            => new DisjunctGraph<Binding>(Graph.From(
-                env => (env, env.SummonBinds(port))));
-        
-        private static Graph<IEnumerable<(Env, Binding)>> PutBinds(IEnumerable<(Env, Binding)> binds)
-            => env => env.PutBind(binding);
+        // private static DisjunctGraph<Binding> SummonBinds(Port port)
+        //     => new DisjunctGraph<Binding>(Graph.From(
+        //         env => (env, env.GetBinds(port))));
+        //
+        // private static Graph<IEnumerable<(Env, Binding)>> PutBinds(IEnumerable<(Env, Binding)> binds)
+        //     => env => env.PutBind(binding);
     }
 }

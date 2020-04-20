@@ -43,11 +43,11 @@ namespace Hoodie
             };
         
         public static DisjunctGraph<TResult> Select<TSource, TResult>(this DisjunctGraph<TSource> source, Func<TSource, TResult> select)
-            => env =>
+            => new DisjunctGraph<TResult>(env =>
             {
-                var (env2, v) = source.Invoke(env);
-                return (env2, select(v));
-            };
+                var (env2, disjuncts) = source.Invoke(env);
+                return (env2, disjuncts.Select(d => (d.Item1, select(d.Item2))));
+            });
         
         // public static Graph<IEnumerable<TResult>> Select<TSource, TResult>(this Graph<IEnumerable<TSource>> source, Func<TSource, TResult> select)
         //     => env =>

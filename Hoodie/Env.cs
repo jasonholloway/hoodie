@@ -8,31 +8,26 @@ namespace Hoodie
     public class Env
     {
         private readonly ImmutableDictionary<string, Var> _vars;
-        private readonly ImmutableDictionary<Port, (Env, Binding)[]> _binds;
+        private readonly Lookup<Port, Binding> _binds;
 
-        private Env(ImmutableDictionary<string, Var> vars = default, ImmutableDictionary<Port, Binding> binds = default)
+        private Env(ImmutableDictionary<string, Var> vars = default, Lookup<Port, Binding> binds = default)
         {
-            _vars = vars;
-            _binds = binds;
+            _vars = vars ?? ImmutableDictionary<string, Var>.Empty;
+            _binds = binds ?? new Lookup<Port, Binding>();
         }
         
-        public Env() 
-            : this(ImmutableDictionary<string, Var>.Empty, ImmutableDictionary<Port, Binding>.Empty)
-        { }
-        
-        public IEnumerable<(Env, Binding)> SummonBinds(Port port)
-            => _binds.TryGetValue(port, out var binding)
-                ? binding
-                : new Binding(port);
+        public IEnumerable<Binding> GetBinds(Port port)
+            => _binds[port];
 
         public (Env, Binding) PutBind(Binding binding)
         {
-            var newBinds = _binds.SetItems(
-                binding.Ports.Select(p => 
-                    new KeyValuePair<Port, Binding>(p, binding)));
-            
-            var env = new Env(_vars, newBinds);
-            return (env, binding);
+            throw new NotImplementedException();
+            // var newBinds = _binds.SetItems(
+            //     binding.Ports.Select(p => 
+            //         new KeyValuePair<Port, Binding>(p, binding)));
+            //
+            // var env = new Env(_vars, newBinds);
+            // return (env, binding);
         }
 
         public (Env, Var) SummonVar(string name)
@@ -51,6 +46,8 @@ namespace Hoodie
         {
             throw new NotImplementedException();
         }
+        
+        public static Env Empty = new Env(ImmutableDictionary<string, Var>.Empty, new Lookup<Port, Binding>());
 
         public static Env Merge(params Env[] envs)
         {

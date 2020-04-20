@@ -7,6 +7,19 @@ namespace Hoodie
         private static int _nextId = 0;
         private int _id = _nextId++;
 
+        public static Domain Multiply(Domain d1, Domain d2)
+            => (d1, d2) switch
+            {
+                (TrueDomain _, TrueDomain _) => new TrueDomain(),
+                (TrueDomain _, FalseDomain _) => Domains.Never,
+                (FalseDomain _, TrueDomain _) => Domains.Never,
+                (FalseDomain _, FalseDomain _) => new FalseDomain(),
+                (BoolDomain _, BoolDomain _) => d1,
+                (Domain _, AnyDomain _) => d1,
+                (AnyDomain _, Domain _) => d2,
+                _ => Domains.Never
+            };
+
         public static implicit operator Domain(bool value)
             => value 
                 ? (BoolDomain)new TrueDomain() 
