@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using Shouldly;
 using static Hoodie.GraphOps;
@@ -24,10 +25,20 @@ namespace Hoodie.Tests
             var binds = env3.GetBinds(@var.Port);
 
             binds.ShouldHaveSingleItem();
+            var bind = binds.First();
+            
+            bind.Ports.ShouldHaveSingleItem();
+            bind.Ports.Single().ShouldBe(@var.Port);
+
+            bind.DomainEnvs.ShouldHaveSingleItem();
+            var (domain, env) = bind.DomainEnvs.First();
+            domain.ShouldBeOfType<TrueDomain>();
         }
 
-
         Env BuildEnv<T>(Graph<T> graph)
-            => graph(Env.Empty).Item1;
+        {
+            var (env, _) = graph(Env.Empty);
+            return env;
+        }
     }
 }

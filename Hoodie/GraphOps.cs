@@ -7,6 +7,16 @@ namespace Hoodie
         public static Graph<Var> Var(string name)
             => env => env.SummonVar(name);
 
+        //and so bind creates a fresh env fragment
+        //which then gets merged in to the whole
+        //but the fundamental operation here is the merge
+        //so binding is really about forming a small env and merging it in
+        
+        //but not only 
+        //
+        //
+        //
+        
         public static Graph<Domain> Bind(params Bindable[] bindables)
             => BaseOps.Bind(bindables.AsEnumerable());
         
