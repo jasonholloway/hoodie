@@ -14,7 +14,7 @@ namespace Hoodie
         public Var(string name)
         {
             Port = new Port($"Var({name})",
-                @in => Graph.Lift(Domains.Any));
+                @in => GraphOp.Lift(Domains.Any));
         }
     }
 
@@ -76,13 +76,13 @@ namespace Hoodie
         public GreaterThanConstraint()
         {
             Left = new Port(nameof(Left),
-                @in => Graph.Lift(Domains.Any));
+                @in => GraphOp.Lift(Domains.Any));
 
             Right = new Port(nameof(Right),
-                @in => Graph.Lift(Domains.Any));
+                @in => GraphOp.Lift(Domains.Any));
             
             Result = new Port(nameof(Result), 
-                @in => Graph.Lift(Domains.Any));
+                @in => GraphOp.Lift(Domains.Any));
         }
     }
 
@@ -94,10 +94,10 @@ namespace Hoodie
         public IsNumberConstraint()
         {
             Inner = new Port(nameof(Inner),
-                @in => Graph.Lift(Domains.Any));
+                @in => GraphOp.Lift(Domains.Any));
             
             Result = new Port(nameof(Result),
-                @in => Graph.Lift(Domains.Any));
+                @in => GraphOp.Lift(Domains.Any));
         }
     }
 }

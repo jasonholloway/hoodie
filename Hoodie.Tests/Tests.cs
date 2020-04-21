@@ -15,7 +15,7 @@ namespace Hoodie.Tests
                 from _ in Assert(AreEqual(varX, 3))
                 select varX;
 
-            var (env, x) = graph(Env.Empty);
+            var (env, x) = graph(Graph.Empty);
             
             var domain = env.GetDomain(x.Port);
             domain.ShouldNotBeNull();

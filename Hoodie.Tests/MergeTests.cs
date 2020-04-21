@@ -5,6 +5,20 @@ using static Hoodie.GraphOps;
 
 namespace Hoodie.Tests
 {
+    public class EnvMergeTests
+    {
+        [Test]
+        public void Woooo()
+        {
+            
+        }
+        
+    }
+
+
+
+
+
     public class MergeTests
     {
         [Test]
@@ -20,7 +34,7 @@ namespace Hoodie.Tests
                 from k in Bind(@var, Domains.Any)
                 select 1);
 
-            var env3 = Env.Merge(env1, env2);
+            var env3 = Graph.Merge(env1, env2);
 
             var binds = env3.GetBinds(@var.Port);
 
@@ -35,9 +49,9 @@ namespace Hoodie.Tests
             domain.ShouldBeOfType<TrueDomain>();
         }
 
-        Env BuildEnv<T>(Graph<T> graph)
+        Graph BuildEnv<T>(GraphOp<T> graphOp)
         {
-            var (env, _) = graph(Env.Empty);
+            var (env, _) = graphOp(Graph.Empty);
             return env;
         }
     }

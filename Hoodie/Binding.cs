@@ -6,20 +6,20 @@ namespace Hoodie
     public class Binding : IEquatable<Binding>
     {
         public readonly ImmutableHashSet<Port> Ports;
-        public readonly ImmutableArray<(Domain, Env)> DomainEnvs;
+        public readonly ImmutableArray<(Domain, Graph)> DomainEnvs;
 
-        public Binding(ImmutableHashSet<Port> ports, ImmutableArray<(Domain, Env)> domainEnvs)
+        public Binding(ImmutableHashSet<Port> ports, ImmutableArray<(Domain, Graph)> domainEnvs)
         {
             Ports = ports;
             DomainEnvs = domainEnvs;
         }
         
-        public Binding(Domain domain, Env env)
-            : this(ImmutableHashSet<Port>.Empty, ImmutableArray<(Domain, Env)>.Empty.Add((domain, env)))
+        public Binding(Domain domain, Graph graph)
+            : this(ImmutableHashSet<Port>.Empty, ImmutableArray<(Domain, Graph)>.Empty.Add((domain, graph)))
         { }
 
         public Binding()
-            : this(ImmutableHashSet<Port>.Empty, ImmutableArray<(Domain, Env)>.Empty)
+            : this(ImmutableHashSet<Port>.Empty, ImmutableArray<(Domain, Graph)>.Empty)
         { }
 
         public Binding WithDomain(Domain domain)

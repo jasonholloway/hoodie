@@ -4,7 +4,7 @@ namespace Hoodie
 {
     public static class GraphOps
     {
-        public static Graph<Var> Var(string name)
+        public static GraphOp<Var> Var(string name)
             => env => env.SummonVar(name);
 
         //and so bind creates a fresh env fragment
@@ -17,10 +17,10 @@ namespace Hoodie
         //
         //
         
-        public static Graph<Domain> Bind(params Bindable[] bindables)
+        public static GraphOp<Domain> Bind(params Bindable[] bindables)
             => BaseOps.Bind(bindables.AsEnumerable());
         
-        public static Graph<Port> AreEqual(Bindable left, Bindable right)
+        public static GraphOp<Port> AreEqual(Bindable left, Bindable right)
         {
             var areEqual = new AreEqualConstraint();
             return
@@ -29,7 +29,7 @@ namespace Hoodie
                 select areEqual.Result;
         }
         
-        public static Graph<Port> GreaterThan(Bindable left, Bindable right)
+        public static GraphOp<Port> GreaterThan(Bindable left, Bindable right)
         {
             var greaterThan = new GreaterThanConstraint();
             return
@@ -38,7 +38,7 @@ namespace Hoodie
                 select greaterThan.Result;
         }
         
-        public static Graph<Port> IsNumber(Bindable sub)
+        public static GraphOp<Port> IsNumber(Bindable sub)
         {
             var isNumber = new IsNumberConstraint();
             return
@@ -46,18 +46,18 @@ namespace Hoodie
                 select isNumber.Result;
         }
 
-        public static Graph<Domain> Assert(Port port)
+        public static GraphOp<Domain> Assert(Port port)
             => Bind(port, true);
 
-        public static Graph<Domain> Assert(Graph<Port> graph)
-            => from port in graph
+        public static GraphOp<Domain> Assert(GraphOp<Port> graphOp)
+            => from port in graphOp
                 from domain in Assert(port)
                 select domain;
 
         public static DisjunctGraph<Domain> Domain(Port port)
             => new DisjunctGraph<Domain>(env => env.GetDomain(port));
 
-        public static Graph<Domain> Zap(params Port[] ports)
+        public static GraphOp<Domain> Zap(params Port[] ports)
             => BaseOps.Bind(Enumerable
                 .Repeat((Bindable)Domains.Never, 1)
                 .Concat(ports.Select(p => (Bindable)p)));

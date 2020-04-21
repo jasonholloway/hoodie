@@ -11,8 +11,49 @@ namespace Hoodie
         //     => binds.Distinct().Aggregate(Binding.Empty, Binding.Merge);
 
             //below should prob just be graph op
-        public static Graph<Domain> Bind(IEnumerable<Bindable> bindables) =>
-            throw new NotImplementedException();
+        public static GraphOp<object> Bind(IEnumerable<Bindable> bindables) =>
+            graph1 =>
+            {
+                var domain = bindables
+                    .Select(b => b.Inner).OfType<Domain>()
+                    .Aggregate(Domains.Any, Domain.Multiply);
+
+                var ports = bindables
+                    .Select(b => b.Inner).OfType<Port>()
+                    .ToImmutableHashSet();
+
+                var bind = new Binding(ports, new[] {(domain, Graph.Self)}.ToImmutableArray());
+
+                var graph2 = Graph.From(bind);
+                
+                //but each addition of ports and domains should be done piecemeal
+                //as we do the initial bind, we might have constants in play for instance
+                //instead of chucking all the bits in a bag and then saying 'merge' (tho this would be most efficient)
+                //
+                //well, this is true: it makes sense for there to be control over how everything gets merged, how the merging is modularised
+                //smaller local merges = faster of course
+                //
+                //it makes sense for us to piece together our new graph bit by bit, and in the order that the bindables have been specified
+                //(always domains first though, but afterwards, the ordering of the ports matters)
+                //
+                //so we are here, despite the expectation of simplicity from `Bind`, doing something composite, secondary
+                //what would be primary? the merging of one new element: even the simplest merge will cause propagation
+                
+                //SERIES OF PIECEMEAL MERGES PLEASE
+                //THE PRIMARY OP IS GRAPH.MERGE - this does everything, inc propagation
+
+                var merged = Graph.Merge(graph1, graph2);
+                
+                return (merged, default);
+            };
+
+        public static GraphOp<Graph> Merge(Graph other) =>
+            env =>
+            {
+                return (env, env);
+            };
+            
+        
             // from mergables in
             //     (
             //         from bindable in bindables
@@ -28,7 +69,7 @@ namespace Hoodie
             // select Domains.Any;
 
         //Propagates a binding through it's ports, reintegrates into the (relative) root
-        private static Graph<IEnumerable<(Env, Binding)>> Propagate(IEnumerable<(Env Env, Binding Bind)> binds) =>
+        private static GraphOp<IEnumerable<(Graph, Binding)>> Propagate(IEnumerable<(Graph Env, Binding Bind)> binds) =>
             throw new NotImplementedException();
             // from x in binds 
             // //as soon as we have iterated the envBind, we should be sequencing using the x.Env
