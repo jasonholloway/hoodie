@@ -5,18 +5,29 @@ using System.Linq;
 
 namespace Hoodie
 {
+    public class PortSet
+    {
+        
+    }
+
     public static class BaseOps
     {
         // private static IEnumerable<(Env, Binding)> MergeBinds(IEnumerable<(Env, Binding)> binds)
         //     => binds.Distinct().Aggregate(Binding.Empty, Binding.Merge);
+        
+        
+        public static GraphOp<object> SimpleBind() =>
+            throw new NotImplementedException();
+        
+        
 
             //below should prob just be graph op
-        public static GraphOp<object> Bind(IEnumerable<Bindable> bindables) =>
-            graph1 =>
+        public static DisjunctOp<Domain> Bind(IEnumerable<Bindable> bindables) =>
+            new DisjunctOp<Domain>(graph1 =>
             {
                 var domain = bindables
                     .Select(b => b.Inner).OfType<Domain>()
-                    .Aggregate(Domains.Any, Domain.Multiply);
+                    .Aggregate(Domains.Any, Domain.Combine);
 
                 var ports = bindables
                     .Select(b => b.Inner).OfType<Port>()
@@ -24,7 +35,7 @@ namespace Hoodie
 
                 var bind = new Binding(ports, new[] {(domain, Graph.Self)}.ToImmutableArray());
 
-                var graph2 = Graph.From(bind);
+                var graph2 = Graph.Lift(bind);
                 
                 //but each addition of ports and domains should be done piecemeal
                 //as we do the initial bind, we might have constants in play for instance
@@ -41,11 +52,12 @@ namespace Hoodie
                 
                 //SERIES OF PIECEMEAL MERGES PLEASE
                 //THE PRIMARY OP IS GRAPH.MERGE - this does everything, inc propagation
+                throw new NotImplementedException();
 
-                var merged = Graph.Merge(graph1, graph2);
-                
-                return (merged, default);
-            };
+                // var merged = Graph.Combine(graph1, graph2);
+
+                // return (merged, default);
+            });
 
         public static GraphOp<Graph> Merge(Graph other) =>
             env =>
@@ -88,7 +100,7 @@ namespace Hoodie
 
         //Propagates a port, replied disjunctions are immediately adopted, all other ports are given chance to themselves propagate
         //as long as something has changed; if nothing has changed, then we should stop this recursive ruffling
-        private static DisjunctGraph<Binding> PropagatePort(Binding bind, Port port) =>
+        private static DisjunctOp<Binding> PropagatePort(Binding bind, Port port) =>
             throw new NotImplementedException();
             // from domain in new DisjunctGraph<Disjunct>(_ =>
             // {

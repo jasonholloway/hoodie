@@ -13,12 +13,25 @@ namespace Hoodie
             _ripple = ripple;
         }
 
-        public DisjunctGraph<Domain> Propagate(Domain domain)
+        public DisjunctOp<Domain> Propagate(Domain domain)
             => _ripple(domain);
 
         public override string ToString()
             => $"Port({Name})";
     }
 
-    public delegate DisjunctGraph<Domain> Ripple(Domain domain);
+    public delegate DisjunctOp<Domain> Ripple(Domain domain);
+    
+    //a binding comes in then...
+    //yes, it's true, we return a disjuntion here
+    //
+    //the difference is that we expect it as part of a 'disjunctgraph'
+    //
+    //this allows us to propagate away, only caring about our current domain...
+    //
+    //
+    //
+    
+    
+    
 }

@@ -8,42 +8,42 @@ namespace Hoodie.Tests
         [Test]
         public void TrueFalse_Never()
         {
-            var result = Domain.Multiply(new TrueDomain(), new FalseDomain());
+            var result = Domain.Combine(new TrueDomain(), new FalseDomain());
             result.ShouldBeOfType<NeverDomain>();
         }
         
         [Test]
         public void TrueTrue_True()
         {
-            var result = Domain.Multiply(new TrueDomain(), new TrueDomain());
+            var result = Domain.Combine(new TrueDomain(), new TrueDomain());
             result.ShouldBeOfType<TrueDomain>();
         }
         
         [Test]
         public void FalseFalse_False()
         {
-            var result = Domain.Multiply(new FalseDomain(), new FalseDomain());
+            var result = Domain.Combine(new FalseDomain(), new FalseDomain());
             result.ShouldBeOfType<FalseDomain>();
         }
         
         [Test]
         public void TrueBool_True()
         {
-            var result = Domain.Multiply(new TrueDomain(), new BoolDomain());
+            var result = Domain.Combine(new TrueDomain(), new BoolDomain());
             result.ShouldBeOfType<TrueDomain>();
         }
         
         [Test]
         public void FalseBool_False()
         {
-            var result = Domain.Multiply(new FalseDomain(), new BoolDomain());
+            var result = Domain.Combine(new FalseDomain(), new BoolDomain());
             result.ShouldBeOfType<FalseDomain>();
         }
         
         [Test]
         public void TrueAny_True()
         {
-            var result = Domain.Multiply(new TrueDomain(), new AnyDomain());
+            var result = Domain.Combine(new TrueDomain(), new AnyDomain());
             result.ShouldBeOfType<TrueDomain>();
         }
     }

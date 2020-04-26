@@ -16,17 +16,17 @@ namespace Hoodie
     }
     
     
-    public class DisjunctGraph<T>
+    public class DisjunctOp<T>
     {
         public readonly GraphOp<IEnumerable<(Graph, T)>> Invoke;
 
-        public DisjunctGraph(GraphOp<IEnumerable<(Graph, T)>> invoke)
+        public DisjunctOp(GraphOp<IEnumerable<(Graph, T)>> invoke)
         {
             Invoke = invoke;
         }
 
-        public static implicit operator DisjunctGraph<T>(GraphOp<T> graphOp)
-            => new DisjunctGraph<T>(env =>
+        public static implicit operator DisjunctOp<T>(GraphOp<T> graphOp)
+            => new DisjunctOp<T>(env =>
             {
                 var (env2, v) = graphOp(env);
                 return (env2, Enumerable.Repeat((env2, v), 1));
@@ -42,8 +42,8 @@ namespace Hoodie
                 return (env2, select(v));
             };
         
-        public static DisjunctGraph<TResult> Select<TSource, TResult>(this DisjunctGraph<TSource> source, Func<TSource, TResult> select)
-            => new DisjunctGraph<TResult>(env =>
+        public static DisjunctOp<TResult> Select<TSource, TResult>(this DisjunctOp<TSource> source, Func<TSource, TResult> select)
+            => new DisjunctOp<TResult>(env =>
             {
                 var (env2, disjuncts) = source.Invoke(env);
                 return (env2, disjuncts.Select(d => (d.Item1, select(d.Item2))));
@@ -111,14 +111,14 @@ namespace Hoodie
                     return (viaEnv, acTos.Concat(Enumerable.Repeat(to, 1)));
                 });
         
-        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this IEnumerable<TFrom> source, Func<TFrom, DisjunctGraph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+        public static DisjunctOp<TTo> SelectMany<TFrom, TVia, TTo>(this IEnumerable<TFrom> source, Func<TFrom, DisjunctOp<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
             => throw new NotImplementedException();
         
-        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctGraph<TFrom> source, Func<TFrom, IEnumerable<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+        public static DisjunctOp<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctOp<TFrom> source, Func<TFrom, IEnumerable<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
             => throw new NotImplementedException();
 
-        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctGraph<TFrom> source, Func<TFrom, DisjunctGraph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
-            => new DisjunctGraph<TTo>(env =>
+        public static DisjunctOp<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctOp<TFrom> source, Func<TFrom, DisjunctOp<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => new DisjunctOp<TTo>(env =>
             {
                 var (env2, outers) = source.Invoke(env);
 
@@ -138,24 +138,24 @@ namespace Hoodie
                                 var (innerAcEnv, innerAcTups) = innerAc;
                                 var (innerEnv, via) = inner;
                                 return (
-                                    Graph.Merge(innerAcEnv, innerEnv),
+                                    Graph.Combine(innerAcEnv, innerEnv),
                                     innerAcTups.Concat(new[] { (innerEnv, resultSelector(@from, via)) })
                                 );
                             });
                         
                         return (
-                            Graph.Merge(acEnv, env5), //only merge envs for benefit of root(?) - evaluation of disjunctions should be isolated
+                            Graph.Combine(acEnv, env5), //only merge envs for benefit of root(?) - evaluation of disjunctions should be isolated
                             acTups.Concat(innerTos)
                         );
                     });
             });
 
-        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this GraphOp<TFrom> source, Func<TFrom, DisjunctGraph<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
-            => ((DisjunctGraph<TFrom>) source).SelectMany(collectionSelector, resultSelector);
+        public static DisjunctOp<TTo> SelectMany<TFrom, TVia, TTo>(this GraphOp<TFrom> source, Func<TFrom, DisjunctOp<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+            => ((DisjunctOp<TFrom>) source).SelectMany(collectionSelector, resultSelector);
         
-        public static DisjunctGraph<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctGraph<TFrom> source, Func<TFrom, GraphOp<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
+        public static DisjunctOp<TTo> SelectMany<TFrom, TVia, TTo>(this DisjunctOp<TFrom> source, Func<TFrom, GraphOp<TVia>> collectionSelector, Func<TFrom, TVia, TTo> resultSelector)
             => source.SelectMany(
-                from => (DisjunctGraph<TVia>)collectionSelector(from),
+                from => (DisjunctOp<TVia>)collectionSelector(from),
                 resultSelector);
     }
 }

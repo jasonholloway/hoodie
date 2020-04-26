@@ -47,18 +47,22 @@ namespace Hoodie
             throw new NotImplementedException();
         }
 
-        public static Graph From(Binding binding)
-        {
-            
-        }
         
-        public static Graph Empty = new Graph(ImmutableDictionary<string, Var>.Empty, new Lookup<Port, Binding>());
+        public static readonly Graph Empty 
+            = new Graph(
+                ImmutableDictionary<string, Var>.Empty, 
+                new Lookup<Port, Binding>());
+        
+        public static Graph Lift(Binding binding)
+            => new Graph(
+                ImmutableDictionary<string, Var>.Empty,
+                new Lookup<Port, Binding>((binding.Ports, new[] { binding })));
 
-        public static Graph Self = null;
-
-        public static Graph Merge(params Graph[] envs)
+        public static Graph Combine(params Graph[] envs)
         {
             throw new NotImplementedException();
         }
+        
+        public static readonly Graph Self = null;
     }
 }
