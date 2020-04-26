@@ -8,33 +8,51 @@ namespace Hoodie.Tests
     {
         private readonly Lookup<Port, (Domain, Graph)> _lookup;
 
-        public Bind(params (IEnumerable<Port>, IEnumerable<(Domain, Graph)>)[] entries)
+        private Bind(Lookup<Port, (Domain,Graph)> lookup)
         {
-            _lookup =new Lookup<Port, (Domain, Graph)>(entries);
+            _lookup = lookup;
         }
 
-        public IEnumerable<(Domain, Graph)> this[Port port] => null;
+        public Bind(params (IEnumerable<Port>, IEnumerable<(Domain, Graph)>)[] entries)
+        {
+            _lookup = new Lookup<Port, (Domain, Graph)>(entries);
+        }
 
-        public static Bind Zero = new Bind();
-        
-        public static Bind Lift(Port[] ports, Domain domain, Graph graph) 
-            => new Bind((ports, new[] { (domain, graph) }));
+        public IEnumerable<(Domain, Graph)> this[Port port]
+            => _lookup[port];
+
+        public static readonly Bind Zero = new Bind();
+
+        public static Bind Lift(IEnumerable<Port> ports, IEnumerable<(Domain, Graph)> domainEnvs)
+            => new Bind((ports, domainEnvs));
 
         public static Bind Combine(Bind left, Bind right)
-            => left;
+            => new Bind(Lookup<Port, (Domain, Graph)>.Combine(left._lookup, right._lookup));
     }
     
     public class BindTests
     {
         [Test]
-        public void BindSomethingOrOther()
+        public void BindLeft()
         {
             var port = new Port("somePort", default);
 
-            var bind1 = new Bind((new[] { port }, new[] { (Domains.Bool, Graph.Empty) }));
-            var bind2 = new Bind((new[] { port }, new[] { (Domains.Bool, Graph.Empty) }));
+            var combined = Bind.Combine(
+                Bind.Lift(new[] {port}, new[] {(Domains.Bool, Graph.Empty)}),
+                Bind.Zero);
+            
+            var disjuncts = combined[port];
+            disjuncts.ShouldHaveSingleItem();
+        }
+        
+        [Test]
+        public void BindRight()
+        {
+            var port = new Port("somePort", default);
 
-            var combined = Bind.Combine(bind1, bind2);
+            var combined = Bind.Combine(
+                Bind.Zero, 
+                Bind.Lift(new[] {port}, new[] {(Domains.Bool, Graph.Empty)}));
             
             var disjuncts = combined[port];
             disjuncts.ShouldHaveSingleItem();
