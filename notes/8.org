@@ -1,0 +1,110 @@
+
+combining two graphs gives us lots of disjunct domains
+how can we actually combine the domains directly; or rather - when does it make sense to?
+
+when you're binding something in the same disjunct as yourself
+
+on one side, there's a binding against a var of two disjunct domains; on the other side there'sonlyone disjunct domain
+
+and so we multiply em: yielding a product of two furhter disjuncts (disjuncts are never anulled but by disproof)
+
+if there's only one on each side, then there's only one product - simple
+
+BUT! there's the complication here of different envs
+
+on the left, each domain is coupled with two subgraphs; on the right there's one, linking to one single graph (the same as the current effectively)
+
+
+if there's one at each side, then these multiply together into one
+do worlds always get merged then?
+
+it would seem so...
+at least in combining graphs
+
+-----
+
+how do we add a disjunction then? any narrows into a disjunction - either because we assign it explicitly or a relation decrees it (the same thing)
+
+a disjunction is a result of propagation
+
+-----------------------
+
+but we now confront the origin of this whittle: do the separate envs truly get squashed into one another by this merge?
+
+the problem with doing so is that we are merging an entire graph at a time here - all the registrations in the dictionary of each are cross-related
+
+we proceed linearly and can't just jump into another env here
+
+in fact it would seem that the original idea was to merge kinda by propagation
+
+which militates against the piecemeal combination of fragments here that was going to be our method
+well, it doesn't... it's actually perfectly fine
+
+each small fragment still needs merging in, accumulating, aggregating as before; it's just our method of doing so must be finessed
+
+--------
+
+propagation goes node by node, whereas this kind of merging happens across the entire surface of the graphs, at once
+
+when we say that this world is true, and that this true is a also true, we a aren't speaking about one part of the graph in particular, but across its whole, all at the same time
+
+so if we are to propagate, we should be propagating them all at precisely the same time
+
+second best thing: go through them one by one, merging them and makingsure they all et propagated
+
+-----
+
+domain disjunctions are then multiplied; but what of portset disjunctions - the first layer of choice?
+
+we find a port as it is represented on the left and on the right
+
+on the left it is bound to two possible portsets; on the right only to one. Onboth sides it has only one domain
+
+in the new combined graph, this port will be related to - the product of these disjunctions again
+
+So each possible combination of left portset * right portset is tried
+and within these, each possible combination of left domain * right domain
+this is a lot of product
+
+Port
+Portset * Portset
+Domain * Domain
+
+is this per port? because it should be that portsets are shared, or at least reciprocated
+but we don't mutate round here
+
+maybe the indexing by port is a luxurious nicety, not an essential part of the structure. The essence is a set of portsets over a field of ports
+we might want to look up portsets from each port (even then, I'm not sure we actually would ever want this...)
+
+a fragment with a singly-bound sole port is but a very small floating portset and its referred-to port beside it
+
+portsets are what we have - and they overlap
+
+-------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(it's always going to link to the same graph)
+
+
+
+

@@ -44,5 +44,7 @@ namespace Hoodie
         public static readonly Domain Any = new AnyDomain();
         public static readonly Domain Never = new NeverDomain();
         public static readonly Domain Bool = new BoolDomain();
+        public static readonly Domain True = new TrueDomain();
+        public static readonly Domain False = new FalseDomain();
     }
 }

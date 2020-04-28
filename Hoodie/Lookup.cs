@@ -30,20 +30,23 @@ namespace Hoodie
                 }))
         { }
 
-        public IEnumerable<V> this[K key]
-        {
-            get
-            {
-                return _rels.TryGetValue(key, out var vals)
-                    ? vals
-                    : ImmutableArray<V>.Empty;
-            }
-        }
+        public IEnumerable<V> this[K key] =>
+            _rels.TryGetValue(key, out var vals)
+                ? vals
+                : ImmutableArray<V>.Empty;
 
         public static Lookup<K, V> Combine(Lookup<K, V> left, Lookup<K, V> right)
         {
             var lRels = left._rels;
             var rRels = right._rels;
+            
+            //so this is just concatenating the dijuncts: they must be multiplied
+            //think of each valuein the lok up really being a disjunction
+            
+            //but this first layer of disjunction on the portset level
+            //howis this here combined together?
+            //
+            //
 
             var combined = rRels.Aggregate(lRels, (ac, kv) =>
             {
