@@ -6,35 +6,47 @@ using Shouldly;
 
 namespace Hoodie.Tests
 {
-    public readonly struct Disjunction
+    public readonly struct DomainSet
     {
         public readonly ImmutableArray<(Domain, Bind)> DomainEnvs;
 
-        public Disjunction(IEnumerable<(Domain, Bind)> domainEnvs)
+        public DomainSet(IEnumerable<(Domain, Bind)> domainEnvs)
         {
             DomainEnvs = domainEnvs.ToImmutableArray();
         }
     }
-    
+
+    public class PortSet
+    {
+        private readonly Group<Port, DomainSet> _group;
+
+        public PortSet(Group<Port, DomainSet> group)
+        {
+            _group = group;
+        }
+
+        public IEnumerable<Port> Ports => _group.Nodes;
+        public IEnumerable<(Domain, Bind)> Domains => _group.Value.DomainEnvs;
+    }
     
     public class Bind
     {
-        private readonly GroupMap<Port, Disjunction> _groups;
+        private readonly GroupMap<Port, DomainSet> _map;
 
-        private Bind(GroupMap<Port, Disjunction> groups)
+        private Bind(GroupMap<Port, DomainSet> map)
         {
-            _groups = groups;
+            _map = map;
         }
 
         public Bind(params (IEnumerable<Port>, IEnumerable<(Domain, Bind)>)[] entries)
         {
-            _groups = entries.Aggregate(
-                GroupMap<Port, Disjunction>.Empty,
-                (map, entry) => map.Add(Group.From(entry.Item1, new Disjunction(entry.Item2))));
+            _map = entries.Aggregate(
+                GroupMap<Port, DomainSet>.Empty,
+                (map, entry) => map.Add(Group.From(entry.Item1, new DomainSet(entry.Item2))));
         }
 
-        public IEnumerable<Group<Port, Disjunction>> this[Port port]
-            => _groups[port];
+        public IEnumerable<PortSet> this[Port port]
+            => _map[port].Select(g => new PortSet(g));
 
         public static readonly Bind Zero = new Bind();
 
@@ -42,7 +54,7 @@ namespace Hoodie.Tests
             => new Bind((ports, domainEnvs));
 
         public static Bind Combine(Bind left, Bind right)
-            => new Bind(GroupMap.Combine(left._groups, right._groups));
+            => new Bind(GroupMap.Combine(left._map, right._map));
     }
     
     public class BindTests
@@ -58,8 +70,8 @@ namespace Hoodie.Tests
             
             var portsets = combined[port];
             portsets.ShouldHaveSingleItem();
-            portsets.First().Value.DomainEnvs.Single().Item1.ShouldBe(Domains.Bool);
-            portsets.First().Value.DomainEnvs.Single().Item2.ShouldBe(Bind.Zero);
+            portsets.First().Domains.Single().Item1.ShouldBe(Domains.Bool);
+            portsets.First().Domains.Single().Item2.ShouldBe(Bind.Zero);
         }
         
         [Test]
@@ -73,8 +85,8 @@ namespace Hoodie.Tests
             
             var disjuncts = combined[port];
             disjuncts.ShouldHaveSingleItem();
-            disjuncts.First().Value.DomainEnvs.Single().Item1.ShouldBe(Domains.Bool);
-            disjuncts.First().Value.DomainEnvs.Single().Item2.ShouldBe(Bind.Zero);
+            disjuncts.First().Domains.Single().Item1.ShouldBe(Domains.Bool);
+            disjuncts.First().Domains.Single().Item2.ShouldBe(Bind.Zero);
         }
         
         [Test]
@@ -88,13 +100,13 @@ namespace Hoodie.Tests
             
             var portsets = combined[port];
             portsets.Count().ShouldBe(1);
-            portsets.Single().Nodes.Single().ShouldBe(port);
-            
-            var disjuncts = portsets.Single().Value.DomainEnvs;
-            disjuncts.ElementAt(0).Item1.ShouldBe(Domains.True);
-            disjuncts.ElementAt(0).Item2.ShouldBe(Bind.Zero);
-            disjuncts.ElementAt(1).Item1.ShouldBe(Domains.False);
-            disjuncts.ElementAt(1).Item2.ShouldBe(Bind.Zero);
+            portsets.Single().Ports.Single().ShouldBe(port);
+
+            var domains = portsets.Single().Domains;
+            domains.ElementAt(0).Item1.ShouldBe(Domains.True);
+            domains.ElementAt(0).Item2.ShouldBe(Bind.Zero);
+            domains.ElementAt(1).Item1.ShouldBe(Domains.False);
+            domains.ElementAt(1).Item2.ShouldBe(Bind.Zero);
         }
         
         [Test]
@@ -119,13 +131,13 @@ namespace Hoodie.Tests
             
             var portsets = combined[port];
             portsets.Count().ShouldBe(1);
-            portsets.Single().Nodes.Single().ShouldBe(port);
-            
-            var disjuncts = portsets.Single().Value.DomainEnvs;
-            disjuncts.ElementAt(0).Item1.ShouldBe(Domains.True);
-            disjuncts.ElementAt(0).Item2.ShouldBe(Bind.Zero);
-            disjuncts.ElementAt(1).Item1.ShouldBe(Domains.False);
-            disjuncts.ElementAt(1).Item2.ShouldBe(Bind.Zero);
+            portsets.Single().Ports.Single().ShouldBe(port);
+
+            var domains = portsets.Single().Domains;
+            domains.ElementAt(0).Item1.ShouldBe(Domains.True);
+            domains.ElementAt(0).Item2.ShouldBe(Bind.Zero);
+            domains.ElementAt(1).Item1.ShouldBe(Domains.False);
+            domains.ElementAt(1).Item2.ShouldBe(Bind.Zero);
         }
     }
     

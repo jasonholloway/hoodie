@@ -82,28 +82,96 @@ portsets are what we have - and they overlap
 
 -------
 
+so a graph is a collection of portsets, with backlinks from port to portset derived from this
 
 
+-------------------------------------------------------------
 
+but there are choices between portsets too
+not just domains have disjunctions
+but portsets too
 
+how do you choose between portsets? 
+you must start with a port, everything starts from a point, even a general merging 
 
+merging two graphs: each portset on one side multiplies with each overlapping portset on the other
+and the way to do this is to go through port links one by one
 
+each portset is as real as any other
+portsets can only overlap within a map if protected by a disjunction
 
+overlapping portsets will only be merged, will only know each other, 
 
+propagation can't alter portsets - can it?
+well, propagation can activate, make flow new graphs
+isn't that a merging in of a new graph? it certainly seems so
 
+on one side, a load of portsets; on the right, loads of portsets
+every overlapping portset must combine
 
+but if there's no overlap, then the portset still survives
+which is odd
 
+the portsets themselves can't multiply then, as otherwise they would be annihilated
+they must be thought of as adding together
 
+but then, if there are multiple worlds of them...
 
+where actually did we get the idea that there'd be multiple worlds of portsets?
+from subgraphs being suddenly made available? they will mechanically be poured into the system; no tracking of possibilities needed here
 
+well - this isn't the case
+given a disjunct domain on a portset in one graph, subgraphs may be activated by only some options
+such a subgraph may extend the triggering portset itself
 
+in which case, the one activating disjunct amongst others may be a window into a world where the very situating portset is altered
+(though only monotonically)
 
+by choosing this disjunct, we enter a world, a graph, where the binding is different - no problems here
 
+this means portsets live in the different obliquely linked layers of each graph
 
+--------
 
+the root graph is like an index of subgraphs: each one is available at the ports it affects, via the choice of a domain 'nose'
 
+so from the off, what we have is indeed a big map of individual ports
 
-(it's always going to link to the same graph)
+no! not ports, but portsets, again; but still, we access via the individual port
+
+how do we know about anything unless wehae a port in the beginning?
+we look at a port, and a port has a choice of portsets, though each portset has a domain; in fact one portset can have multiple possible domains
+
+the index per port at the root level is the conceived portset/domain disjunction but inside out
+like the root index is the puckered skin of a fish(?!) tightly torqued
+
+at the root, given a port, we choose from its domains, and each domain comes with its own followable world
+this world, if we were to follow it, is our entrance into a portset - we can have no portset without choosing a world from the disjunction first
+
+soa disjunction at the root has a collection of domains with worlds
+
+the discovered world is in the first instance - a portset with a set domain
+suddenly we have access now to the peers of the port in this scheme of things
+
+if weare propagating for whatever reason, we can now by the links of relations (the owners of the port legs see) find our way to other disjunct spaces
+
+but we choose first of all, and make our way /to/ a portset: the portset isn't choosable in itself; after all, how would we distinguish them?
+
+---------
+
+this is how choices are presented, not just for end consumption by sampling, but for the propagating mechanism too
+
+is this how the data actually is however? currently the portset forms part of the nose of the disjunct, the peeping through of the alternate world
+yet we will only ever care about disjuncts and qualities of the disjuncts once we've enumerated them; in fact I'm not even sure we ever really care about the nose
+if a disjunct is there, we have to enumerate it; what we find there is what we find there
+
+but this is it, the choosing, and what snippets of info we pick up through our choosing - this is the one and only way of gathering portset and domain; we don't find these bits of information
+restated anywhere; we choose the portset, which puts us in contact with others, and we choose the domain of the portset we'll be going with; after that point we have the means of finding other ports
+in the set in this world (the world has been gathered piecemeal through the choosing); at this point we can happily propagate to the sibling ports; though we also need to contextualise our call to them
+port by passing it a reference to where we are: the packaged tuplised env is just a signpost, a signal that will limit other bindings that we may see
+
+so we do choose the portset first
+
 
 
 
