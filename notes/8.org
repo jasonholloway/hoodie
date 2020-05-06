@@ -172,6 +172,898 @@ port by passing it a reference to where we are: the packaged tuplised env is jus
 
 so we do choose the portset first
 
+-----------
+
+at a disjunction (which is on a port, not a portset - the port is the first site of choice) we choose a portset (like milking an ewe) then a domain, and having ranged so far, we find the contextualised graph to now carry with us
+
+but we also want to fold graphs into each other - the first thought with this was that we should enumerate all ports on each, but are the portsets more real in fact?
+
+the portsets are zones, and are real; each domain lives on a portset; so on a graph we have our portsets; these portsets don't live in a set, but in a map against ports
+each graph is in fact a dictionary of ports with portsets
+
+-------------
+
+we want to merge small graphs together; so a good starting point would be deciding what the smallest graph would look like
+
+the smallest graph would quite simply have a single binding, a single port with a single domain
+a single portset, a single domain in that portset, and that domain would point back to the current root
+
+if two such tiny graphs converge, then what?
+the portsets are the true things, but the portsets can only be compared by their ports
+
+and a portwise comparison of portsets can be done using the same port->portset index surely
+
+we enumerate the ports in play; all portsets on the left are combined with all portsets on the right; each combination creates another graph, partially zipped;
+the enumeration of course keeps track of ports that have been seen;
+
+instead of creating new graphs on each small combination, it would be better to batch operations; 
+so - instead of creating new graphs, we should be building a list of portsets to be combined, or rather - a list of independent combinations
+the actual combining and registering of these portsets can be done at once at the end
+
+but what would these intermediate structures be, if not something very similar, in fact identical in function, to the immutable structures of more permanent storage
+
+but, though the portsets would be the same, and are reasonably updated in place, indexes also must be updated
+in fact each update is the same here; each time we add anything we have to update the heads here
+
+first of all we find overlaps; this is done by, as we were saying, enumerating all port->portset indices on both sides, grouped by port
+we find an entry on both left and right sides: this means the portsets overlap somewhat, and should be joined in the new graph we are contextually building up
+
+we aggregate what - an entirely new graph? no need to be entirely new; we can build to the left or to the right
+we can build to the left by default, though dome efficiency would be gained by building onto the larger graph each time
+
+we go one by one through the available ports, adding more and more onto the left graph
+
+but if we find an overlap, we should combine not just that one port, but the entire portset right there, uprooting its indices (by some mechanism)
+
+we have two accumulators, one increasing, one diminishing
+when a portset is found to overlap, it must be transplanted as a whole and removed from the right side
+and added to the portsets of each implicated port on the left
+
+but in doing so we will lose disjunctions on the right-hand side
+as we will afterwards enumerate ports previously touched by the now transplanted portsets,
+which through their transplantation now only appear on the left side as pristine
+
+this is the problem of using the left side as source and accumulator at once
+solution: zip together into one common accumulated output graph
+portsets are moved wholesale as soon as they are discovered
+
+-------------------------------------------------------------------
+
+as each portset is transplanted over, all of its registrations with ports on its sources must be take with it
+similarly, new indices must be immiediately created on the destination graph
+
+each time a portset is taken, it should bring with it, like flypaper, any matching portsets from the other side
+this means that a train of portsets will be merged together at one time
+
+they will also be uprooted at the same time
+in fact it might be that the entire set of portsets on both sides is pulled out as one awkward length
+leaving us just to enumerate empty ports thereafter
+
+
+-------------------------------------------------------------
+
+*merging*
+
+if the ports were ordered, then everything could be ordered
+and ports, as reference types, do have a natural order
+
+do we want to update the index as we go on? the index could even be lazily generated
+though it is needed for this merging also
+
+it would be best of all if we could merge in to the biggest graph
+the fewer updates the better
+
+which goes against the grain of the previous approach of extracting systems of groups whole; instead we patch up to achieve the same
+
+how can we do this? by extending current groups
+and by adding new groups
+
+we'd go through the groups on the right, and for each,
+find intersecting groups on the left; these groups are now to be joined and extended
+
+though - it is certainly easier to implement the full-reindex-on-each-merge approach (though ghastly)
+
+------
+
+operations to merge
+
+right -> left
+- add new graph (as a special case of the below)
+- extend groups with new groups
+
+that's about it - movement will always be towards expansion
+
+for each group on the right,
+find intersecting groups on the left
+
+and extend the selected set of groups using the right hand side group
+
+can't we just add the new group then? the problem with this is that, if there are multiple groups on the right, the second to be applied will find everything already smudged
+
+multiple groups on the right would be projected to new groups on the left
+
+each group on the right as found should be applied separately in parallel to the left graph
+this begets a selection of new graphs that can be themselves combined
+
+not combined, but added, as overlapping groups from this point shouldn't be made to touch; should exist in isolation from each other
+
+two phases: combination and addition
+
+--------
+
+combination is done by taking each right-hand group and joining it in - yielding each time an independent result, a projection of the left map
+these would then be 'added' together
+
+a problem here is needing to add the full graph each time
+
+would be better if only the implicated groups were in the first place projected
+but then we'd be in the business of creating loads of intermediate structures again
+better to deal in lazy thunks here, that can be applied at one time (at the end) to the one accumulating graph
+
+so each right hand group is taken one by one
+and, instead of application in parallel, is applied, aggregated in series
+
+though - more like the gathering of applicable left groups is done in parallel, but the final application is done once only
+and the final application is exactly when the indexing happens - once only, and accumulative
+
+so we gather the groups first: how? each group on the right is of course represented, and all else being equal each righthand group would be added as a completely separate group on the left side, accruing indexing as we go
+
+but each time an intersecting left hand group is found, then we're not about adding a completely new group, only extending an existing one
+which is a separate kind of operation of course
+
+but in this case if there are two right groups to apply overlapping, these will create the same operation duplicated: here we have to create a brand new group and index it in
+the first extends the existing, but the second has to be freshly applied
+
+this is op-by-op approach: fiddly special cases all the way through
+though the domain is limited, the special cases are obvious and well-known: we can make sure we handle all of them
+
+----------
+
+- for each right group,
+	- extend each intersecting left group
+	- but if there are overlapping groups to join on the left, then we need to maintain the choice of possibilities here
+
+!!!
+Even if there is only one group on the right, there's the chance of complication here:
+if a right group stands to join a single group with two overlapping groups, both on the left, how do we do this????
+
+(1,2)__(2)
+(3,4)  (4)
+
+
+here the two left groups don't overlap 
+we summon the right group
+and join the new group to the existing groups
+
+which involves removing all old groups and their indices,
+and adding the new ones - simple enough
+removing and then readding isn't that much of a bind
+
+so that's simple enough
+------
+
+the problem was with overlaps, because with overlaps there's an implied choice
+that we must maintain
+
+
+(1,2)        (2,4)
+  (2,3)
+                
+in this case, 
+the one new group shouldn't join the groups that it finds,
+but apply to them separately
+this is because the two left groups are actually in disjunction
+(if you imagine a big dividing line between them)
+
+whereas the two above aren't, being instead on the same plane
+
+part of me wants to encode disjunctions more explicitly into the graph,
+though they are deducible as is: any overlap means disjunct
+
+although this makes me worry again: 
+if we have alternate worlds we can choose between, surely the consistency of these worlds is across the provided graph, not just per group?
+
+though, across thew graph, if there is only one choice against a certain port, then it must be true
+but, in the above case, if that were so, then both (1,2) /and/ (2,3) would have to be true at the same time, as (1) and (3) insist on one each
+
+they can't float alongside each other like this, with the rule that one choice against one port means that must be true
+
+when we choose a disjunction, that should be a consistent view of the world
+not sure here: the idea's always been to have choices on choices: you don't immediately find global simplicity, though you do always step in the right direction
+
+what we imagine to ourselves when we think of a graph is always the index: a selection of choices against ports
+that's what we see
+
+when we, starting from a port, choose a particular portset, we don't just choose that one portset, but a selection of others that all make sense with it
+this is what we were hiding behind the domain choice, as a consolidated choice: choose a portset, choose a domain, get a more consistent world
+
+except now we're trying to tackle the portset choice in isolation, but with the same shape of choice
+
+-----
+
+as part of a composite choice, what role do the portsets play?
+
+well, we want to index them, which does mean disjunction here
+
+our simplified model here has portsets but no domains, which we would like to build as a second increment
+
+but it still has the idea of choice; in choosing we still get a simplified graph of portsets
+if we have choice, then multiple overlapping portsets need to live alongside each other somehow;
+and they can't just live in the same shared hashset, as this misses all linkages between them
+
+we fall back to our previous kitchensink approach, only this time without the full worktop:
+a structure of layered scopes, with lookup delegated to the root level from above
+this allows commonly-available portsets to be found, even when we're traversing more particular spaces
+	
+-----
+
+and back to our original problem here: the steady building up of graphs from atoms
+
+A(1,2)       C(1)
+  B(2,3)      (3)
+
+on the left side, two portsets are opposed: both cannot be true
+so when we lookup (2), we get both back as choices
+
+when we lookup (1) however, it would seem we also get a choice between two: either nil or (1,2)
+does this mean on (2) too we have the choice of nil, and actually have three possibles?
+
+as a chooser we maybe always have the choice of 'no' - we don't have to bind anything, though choosing 'no'
+gets us nowhere - returning us to our starting position only.
+
+so having an indexed option there doesn't mean it has to be true: it is in fact suspended
+
+-------
+
+idea yesterday was that indices are projections of an underlying structure
+now i'm wondering if this true; the real structure is indeed a graph
+
+on the left then, we have two portsets, that certainly exist as portsets, in states of situated independence
+
+if we were to combine in the right hand side, then each such set, if it touched the same ports, would be affected
+though by being extended, other portsets might also be folded in at this point from the left
+
+the above is a reasonable example scenario: let's flesh it out
+
+A(1,2)       C(1)
+  B(2)        (3)
+
+1: A    |  1: C
+2: A,B  |  
+3:      |  3: C
+
+the only choice is on (2), between A and B
+if we choose A, we find ourselves in a subgraph (subindex?) with only A
+
+similarly C, by itself, is a fragment with only C
+if it was added to A's fragment, we'd get this:
+
+1: A C
+2: A
+3:   C
+
+which would be the two subgraphs, but now joined by a common root index
+adding would then just be a case of wrapping two fragments with a global index
+
+but what if the two graphs don't overlap? consider B + C:
+
+1:   C
+2: B
+3:   C
+
+in this case, if we chose 2:B, then we'd get a lonely graph of only one entry,
+but if we then enquired after (1), our enquiry would be delegated back to the root graph as we have made no choice on that matter:
+with delegation we'd then always get:
+
+1: C
+2: B
+3: C
+
+------
+
+1: A   C
+2: A B   
+3:     C
+
+if we chose 1:C then delegation on (2) would give us A|B
+which is surely wrong, as we have disproved A
+on the rejection of a group, it should be removed from the possibles on offer
+
+so we don't just delegate to the original root: we in fact create a brand new graph with choices both positively and negatively narrowed
+
+if C was in its own fragment, we could continue with that, as long as we changed the root scope to remove the rejected group
+or - we could do both changes at once to create a single environment to work with
+
+so when we make a choice, we actually obliterate the current graph; we chisel it down
+
+this leads us back to the thought of having groups in a set, and then maintaining an index to them
+the index is then not just a secondary nicety, but an integral part of tracking choices
+when you make a choice, you both choose and reject, and the graph changes to match this choice
+
+------------------------
+
+back to the problem of combining:
+
+1: A   C     AC
+2: A *    =  AC
+3:     C     AC
+
+
+1: A B     C     AC BC
+2: A    *  C  =  AC BC
+3:   B              BC
+
+
+1: A           A
+2:    *     =  
+3:       C       C
+
+if it wasn't so with this 'multiplication', combining together non-overlapping graphs would always leave us with nothing
+maybe emptiness should be thought of as unity, not null
+
+--
+
+if we have it as so, then how will propagation work? propagation will make choices, and create simpler and simpler graphs for itself;
+it will still be possible for itself to return its findings however, for a remerge into the master
+
+---
+
+so 
+- sets of groups that can be added and combined, with an updating of indices after
+- also a mechanism for making choices
+
+
+1: A             CA
+2: A       C     CA CB
+3:      *     =  
+4:   B     C     CA CB
+5:   B              CB
+
+1: A             CAB
+2: A       C     CAB
+3:      *     =  
+4: B       C     CAB
+5: B             CAB
+
+this then doesn't work...
+
+we want C to join the disparate portsets of A and B
+because A and B arent actually in disjunction, they just need bridging
+
+I suppose merging could implicate all touched by C, all at once: we'd firstly gather all implicated portsets, then merge them all into one big supergroup
+
+1: A             CAB
+2: A       C     CAB
+3:      *     =  
+4:   B     C     CAB
+5:   B           CAB
+
+but then...
+
+1: A             CAB
+2: A B     C     CAB
+3:      *     =  
+4: A B     C     CAB
+5:   B           CAB
+
+this ignores the disjunction between A and B at (2) and (3)
+
+
+
+1: A             CA
+2: A       C     CA CB
+3:      *     =  
+4:   B     C     CA CB
+5:   B              CB
+
+1: A             CAB
+2: A       C     CAB
+3:      *     =  
+4: B       C     CAB
+5: B             CAB
+
+how to differentiate between the above?
+
+there's actually no way to express the first example above: how can the portsets be presented in disjunction if they don't overlap
+(unless we make disjunction fundamental to the structure)
+
+if we use the per-port indices as our sources of structure, then it's inexpressible, anyway
+and indeed do we want to be able to express it?
+
+------
+
+why would we have choices of portsets? because under different conditions, in different subgraphs, different bindings will be activated
+but these choices are always in subgraphs
+
+we still want them to be represented in the root index here, but their structuring comes from the nesting and situating of the graphs themselves
+so a portset will always be flat?
+
+given a port, we nevertheless have a choice of portsets: each such choice becomes a partial shortcut to another subgraph where this portset holds true
+
+it's the separation again between the true structure of things and the secondary projection by which we regather that structure
+
+what we get after the choice is a groupmap that corresponds with our choice - but it is an environment with further choices embedded within it
+we don't suddenly break through to a world of simple, clear reality; rather things have just simplified partially; we're still in the world of disjunctions
+
+we return to our previous conception:
+a root graph absorbs all the possibilities of the subgraphs above it
+
+a graph is always a mapping of ports to choices; if we're dealing only in bindings, and not associated values, then in a graph a port has a choice of portsets
+but when choosing a portset from the selection of available portsets against a port, what we do is find ourselves in a slightly simpler graph
+in this slightly simpler graph, if we try to find the choices against a port that is untouched by the subgraph, we delegate back to the root
+
+though the root may have choices that are incompatible with the choice already made on entering the subgraph: the only thing to do in this instance is to
+not delegate to the root, but to a simplified root cleaned of what has been explicitly rejected
+the counterpart to the subgraph is calculated as a backing to the subgraph
+
+-----
+
+this is all good in the abstract, but what kind of data structure is this? it is supremely discoverable, but we now want to compose it from atoms
+
+firstly, the simplest graph: one port has one possible portset, that includes itself only; on choosing this one possiblity (hm this is actually the implicit zero case)
+
+let's try again; the simplest graph: two ports with a single portset possibility; on choosing this, we get a subgraph that is in fact the same as the root
+
+but now, what has changed? I want to say that the ports attached by the portset now have no choice: there is only the chosen portset as before; in this case, we find ourselves
+back at the root; the root has linked to itself, there is non need for a subgraph here
+and anyway, we don't consult the map directly, rather we extract info from it via the choice itself; its just we acknowledge the effect of our choice
+
+so, a single port with a portset of itself only is a kind of identity, saying nothing, as this binding is always available.
+a binding without choice is offered on top of the useless possibility of identity
+
+but what of a graph with choice?
+well: a port is either connected to another, or it is only connected to itself
+the choice of self-connection would reject the join, would be a non-productive 'no', though it is always pedantically available
+is it really? surely, when we have chosen a connecting portset, then that is it done with - it can't be denied then
+
+as soon as a choice has any entry, then we lose the possibility of self-connection: something definite is being said here
+it would be a waste of time to indicate the positive possibility of self-connection; but as soon as we lose that innocent possiblity -
+that is, as soon as we know a port is connected to another, then we must mark its difference
+
+can there ever be a choice between isolation and a connection?
+I'm momentarily happy to say - no; at least, not a positive choice
+
+------
+
+simple case: a disjunction is built up by composition of atoms
+
+but combining isn't the way to build up disjunctions: combination can only dissolve differences as everything tends towards gloop
+so trying to build disjunctive graphs by combination is a fool's errand
+
+where do disjunctive graphs come from then?
+
+the ports themselves: often a relation will have a leg with one of two values, a boolean
+a disjunction implies a hard choice, and comparisons are required for choices
+though it would also be possible to explicitly bind such
+and a disjunct on the right then creates cascading disjunctions on the left
+
+and the intercession of a choosy port is by imposition
+so - combination must cope with preexisting disjunction
+
+and - how might imposition work?
+we merge in a single small identical binding, albeit with a payload
+
+this is for domains? though domains are just another way to get a disjunction
+a portset of one is sufficient for a payload: by itself it's doubtlessly pointless
+
+an empty entry on a graph may be thought of as unity in terms of portsets, but emptiness in terms of payloads
+it seems that unity is the sane default for both portsets and domains: a unity domain says nothing, but that the domain equals itself: no content
+a null though is a forceful negative: never needs stating
+
+A|B|Never & Identity
+
+anding Identity means nothing as Identity is always true
+and oring Never means nothing, as Never is nevr true, and so never interferes
+but the other way round, both values destroy the computation
+
+So, unstated, Identity is always assumed
+whereas Never is never assumed, unless we have a disjunction, in which it is implicit
+Never can change things only when it is in one position, in place of the implicit Identity
+it therefore must be explicitly stated
+
+------------
+
+where were we this morning?
+
+quite convinced that portsets only appeared in indices - such is the only way to represent the multifaceted choices involved 
+(unless we were to reconstruct the choosability of things from overlaps on the hoove)
+
+which is fair enough; we have a single layer of disjunctions; each time we make a choice, then this choice must propagate to rule out other choices
+
+at the level of overlapping portets, this culling appears most straight forward - but we have to think of domains as well and extensive, repeated propagataions
+of values. the idea of having subgraphs creates a place for memoizations. 
+
+I need to mull over propagations again, moving away from the simpler world of portsets...
+
+----------
+
+as a new atom is merged in, we obviously create a new graph that now needs normalising - we have to see if all the nodes we have recently touched are at peace with their reformed surroundings
+or, we do it on each smallest change (the sooner we integrate sometimes the better, though batching is also most efficient - there must be a sweet spot here) 
+
+say we merge in a fragment, then normalize by propagation
+each port is given a chance to say what's what: the impulse is passed to it, it checks with its hinterland, and as it goes updates domains
+
+it gets to a disjunction: or rather, a singular port on one side of a relation is split by traversal of the relation, and the propagation proceeds in two parts
+
+if this propagation were destructive in its simplifications on choice, there may be difficulties in its updating of the underlying graph
+though the propagation only knows its one niche; though the joining after the forking must occur, and this must add together possiblities from different branches
+
+on reciprocal join afer fork, it's newly decided bindings would be poured back into the downstream graph, and previous precipitations from the same would be replaced
+we would now the origin of a disjunct from the env attached to it: though not all such precipitates would be of the immediately returned graph, but of ulterior ones behind
+
+the return should carry with it a record of graphs replaced then, an increasing bag of obsolete bindings, which on return will be replaced on favour of fresh ones
+though this only applies to bindings on affected ports; a graph may still hold true if reachable by other routes
+
+---
+
+so progress by mutilation of the graph seems alright, as on return we will return to the unmutilated original; but we are conceiving again of subgraphs 
+on choice of a subgraph, we must rid ourselves of compatriot choices across the root, as these will show through as possibilities even in the branch
+
+with portsets it is easy, as these are shared across ports and have their own logic of intersection; domains on the other hand are propagated by a secondary system
+of reactive relations, of springy reflexes computed by exhaustive search
+
+so when we choose one particular domain, it is true that we have rejected the others; but to truly enter the consistent world into which this choice leads us, we have to
+propagate until we find rest - the system is one of simplified pushing and pulling
+
+----
+
+is it right then to treat the two systems separately? a system of portsets can suit itself, it seems, but if specialise to it, we won't stretch to the greater subtlety of the domain system
+this is why the domain system should be our guide: we need to cope with it
+
+maybe a domain system without portsets would be a good start? just ports with no bindings - or rather, with no choice of bindings
+
+the case for a choice of bindings (again): activation of blocks on conditions; latches that activate
+and such a latch would activate only on propagation: when a value becomes acceptible, the propagation will penetrate the block, it will flood its relations and flow back its findings
+which will precipitate below as normal
+
+summoning bindings from below to feed propagations above is fine as we can't know which bindings below are ruled out except by such rifling through them: and the findings will be stored above on the subgraph rather than in the root
+
+but portsets are a different kettle of fish: once we choose one portset, we know which other portsets must be binned in the current branch: those that don't agree with our choice 
+so the choice of portset itself, even without choice of domain, has an effect on the graph
+we could, if we wanted, only half choose at a disjunction: we could choose a portset and see what further choices we could make from there
+
+the portset choice is a distinct act, rendering to us a simplified graph of further choices
+though such a choice does not access necessarily a memoised subgraph, but a dynamically calculated vision
+nevertheless it returns to us a graph
+
+if suddenly a new portset is available, and we choose it, we will find then not a completely new graph, because our new site will be derived from the previous, but having taken it,
+no subgraphs will be available - this absence will however only mean thoroughgoing delegation to the original - propagation will still proceed
+
+will we still see the bindings of ports under conditions of the previous portset regime? no - because the portset logic will have ruled those out that are destroyed by the simple logic of
+portsets; but still others will have had their payload domains influenced by the other regime; this is but a momentary inconsistency however, as our current propagation will now tear through,
+and memoise its own values in the new spaces afforded to it
+
+------
+
+portsets then are the first front, always the first choice 
+and when we choose a portset, other portsets that no longer are available must be expunged from our options: this is done by scanning the ports spanned by the chosen portset, and enumerating the competing portsets newly vanquished
+
+if there is only one portset left elsewhere after this simplification, does this mean that that portset must be chosen? if so the wave of simplification can proceed even further
+
+no - because it might be that by our choices there is no possiblity of linkage between ports, where before there was
+
+------
+
+portsets have their own logic, that then lets the logic of domains build on top of it
+
+what we're after ultimately is a responsive graph
+we can get this with portsets alone
+
+when we have domains too, then the graph of portsets opens up to let us harmonise them on their own terms
+
+so - we should be able to build the first layer by itself
+
+------
+
+do group graphs lead to other group graphs? the idea would be that we have sufficient information in our current graph, and just need to trim it down on the occasion of a choice
+
+on choosing, we'd now find ourselves with a different graph, with all the impossibilities plucked out
+
+so we wouldn't have to carry with us subgraphs here, we'd just work them out on the fly
+would we? WOULD WE?
+
+the idea is, again, that we'd be able to whittle our graph as we went happily enough. Our choices can propagate themselves into ins and outs, simply enough.
+
+-------------------------
+
+1: A B   C   _ _
+2: A   *   = _ _
+3:   B   C   _ _
+
+- what overlaps C?
+  first discovered overlap is 1:A|B,
+  only one can be true
+
+so at this moment of first choice of first option, we get rid of what we reject
+(we must do to avoid interactions elsewhere in the combination)
+
+so - do we collect all the groups to be merged, and all the groups to be collected?
+basically need to walk the graph collecting these
+
+we don't need to actually alter the graph then - we can protect ourselves with a set of guards, rendering the bad invisible
+
+and when we've finished walking in our particular disjunct, we can throw the bag of invisibility away
+(there is an alternative here in actually simplifying the graph as we go)
+either way, we walk and we accumulate
+
+we'd basically accumulate a list of these replacement specs, a list of simple ops to perform on the graph
+the first would be the replacement of a set of graphs with a new one
+
+the second actually simpler operation would be to add, not replace a fresh group
+it's almost like the first option is simply this add prepended with a delete...
+
+the simple graph ops would then be addGroups/deleteGroups; after this we just need to walking the graph to merge
+
+--------------------------
+
+AddGroups
+RemoveGroups
+
+simple enough: groups simply overlap
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

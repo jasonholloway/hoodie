@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Hoodie.GroupMaps;
 using NUnit.Framework;
 using Shouldly;
 
@@ -54,7 +55,7 @@ namespace Hoodie.Tests
             => new Bind((ports, domainEnvs));
 
         public static Bind Combine(Bind left, Bind right)
-            => new Bind(GroupMap.Combine(left._map, right._map));
+            => new Bind(left._map.Combine(right._map, null));
     }
     
     public class BindTests
