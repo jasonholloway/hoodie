@@ -8,9 +8,8 @@ namespace Hoodie.GroupMaps
     public abstract class GroupMap
     {
         public static GroupMap<N, V> From<N, V>(IEnumerable<N> nodes, V val)
-            => new GroupMap<N, V>(
-                new[] { Group.From(nodes, val) }.ToImmutableHashSet(),
-                ImmutableDictionary<N, ImmutableHashSet<Group<N, V>>>.Empty);
+            => GroupMap<N, V>.Empty
+                .Add(Group.From(nodes, val));
     }
 
     public class GroupMap<N, V> : IEquatable<GroupMap<N, V>>
@@ -18,7 +17,7 @@ namespace Hoodie.GroupMaps
         internal readonly ImmutableHashSet<Group<N, V>> Groups;
         internal readonly ImmutableDictionary<N, ImmutableHashSet<Group<N, V>>> Index;
 
-        internal GroupMap(ImmutableHashSet<Group<N, V>> groups = null, ImmutableDictionary<N, ImmutableHashSet<Group<N, V>>> index = null)
+        private GroupMap(ImmutableHashSet<Group<N, V>> groups = null, ImmutableDictionary<N, ImmutableHashSet<Group<N, V>>> index = null)
         {
             Groups = groups ?? ImmutableHashSet<Group<N, V>>.Empty;
             Index = index ?? ImmutableDictionary<N, ImmutableHashSet<Group<N, V>>>.Empty;
