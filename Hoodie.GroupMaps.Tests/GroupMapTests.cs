@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
@@ -87,51 +89,43 @@ namespace Hoodie.GroupMaps.Tests
         }
 
         [Test]
-        public void CombiningOverlappingGroups()
-        {
-            var map1 = Map((1, 2),    "one");
-            var map2 = Map(   (2, 3), "two");
-            var combined = map1.Combine(map2);
-            
-            Assert.That(combined, Is.EqualTo(
-                Map((1, 2, 3), "onetwo")));
-        }
+        public void SimpleEquality()
+            => Interpret(@"
+                 A . A
+                 A = A
+             ");
+        
+        [Test]
+        public void Equality_OfDisjuncts()
+            => Interpret(@"
+                 A B . B A
+                 A B = B A
+             ");
+        
+        [Test]
+        public void Equality_OfDisjuncts2()
+            => Interpret(@"
+                 A . . A
+                 . B = B
+                 C D . C D
+             ");
+        
+        [Test]
+        public void Combine_Overlaps()
+            => Interpret(@"
+                A . . . AB
+                A * B = AB
+                . . B . AB
+                ");
 
-        [TestCase(@"
-            A B . C . AC BC
-            A . * . = AC .
-            . B . C . .  BC
-        ")]
-        public void Blah(string code)
-        {
-            var matches = Regex
-                .Matches(code, @"^(?: +([\w\.\*\+\=]+))+", RegexOptions.Multiline);
-                
-            var slices = matches
-                .SelectMany((m, y) => m.Groups[1].Captures.Select((c, x) => (y, x, c.Value)))
-                .GroupBy(t => t.x, t => (t.y, t.Value))
-                .Select(g => g.GroupBy(t => t.Value)
-                                .Where(gg => gg.Key != ".")
-                                .Select(gg => Group.From(gg.Select(x => x.y), gg.Key))
-                                .ToArray());
-
-            foreach (var slice in slices)
-            {
-                if (slice.Any(g => g.Value == "*"))
-                {
-                    TestContext.WriteLine("heello");
-                }
-                else if (slice.Any(g => g.Value == "="))
-                {
-                    TestContext.WriteLine("heello");
-                }
-                else
-                {
-                    TestContext.WriteLine("heello");
-                }
-            }
-        }
-
+        [Test]
+        public void Combine_Disjuncts()
+            => Interpret(@"
+                A B . C . AC BC
+                A . * . = AC .
+                . B . C . .  BC
+            ");
+        
 
         static GroupMap<int, string> EmptyMap = GroupMap<int, string>.Empty;
         
@@ -151,5 +145,97 @@ namespace Hoodie.GroupMaps.Tests
         
         static GroupMap<int, string> Map((int, int, int) nodes, string val)
             => Map((new[] { nodes.Item1, nodes.Item2, nodes.Item3 }, val));
+        
+        
+        void Interpret(string code)
+        {
+            var matches = Regex
+                .Matches(code, @"^(?: +([\w\.\*\+\=]+))+", RegexOptions.Multiline);
+                
+            var slices = matches
+                .SelectMany((m, y) => m.Groups[1].Captures.Select((c, x) => (y, x, c.Value)))
+                .GroupBy(t => t.x, t => (t.y, t.Value))
+                .Select(g => g.GroupBy(t => t.Value)
+                                .Where(gg => gg.Key != ".")
+                                .Select(gg => Group.From(gg.Select(x => x.y), gg.Key)))
+                .SelectMany(slice => slice switch 
+                {
+                    _ when slice.Any(g => g.Value == "*")
+                        => new object[] { "*" },
+                    _ when slice.Any(g => g.Value == "=")
+                        => new object[] { "=" },
+                    _ 
+                        => (IEnumerable<object>)slice
+                });
+
+            var tokens = new Queue<object>(slices);
+            var map = GroupMap<int, string>.Empty;
+            
+            while (tokens.Any())
+            {
+                _ = ReadMap(ref map) 
+                    || ReadMulti(ref map)
+                    || ReadEquals(ref map);
+            }
+
+            bool ReadMap(ref GroupMap<int, string> map)
+            {
+                if (!tokens.Any()) return false;
+                if (tokens.Peek() is Group<int, string> group)
+                {
+                    tokens.Dequeue();
+                    map = map.Add(group);
+                    ReadMap(ref map);
+                    return true;
+                }
+
+                return false;
+            }
+            
+            bool ReadMulti(ref GroupMap<int, string> left)
+            {
+                if (!tokens.Any()) return false;
+                switch (tokens.Peek())
+                {
+                    case "*":
+                        tokens.Dequeue();
+                        
+                        var right = GroupMap<int, string>.Empty;
+                        if (!ReadMap(ref right))
+                        {
+                            throw new InvalidOperationException("'*' needs groups to its right!");
+                        }
+
+                        left = left.Combine(right);
+                        return true;
+                    
+                    default:
+                        return false;
+                }
+            }
+
+            bool ReadEquals(ref GroupMap<int, string> left)
+            {
+                if (!tokens.Any()) return false;
+                switch (tokens.Peek())
+                {
+                    case "=":
+                        tokens.Dequeue();
+
+                        var right = GroupMap<int, string>.Empty;
+                        if (!ReadMap(ref right))
+                        {
+                            throw new InvalidOperationException("'*' needs groups to its right!");
+                        }
+                        
+                        Assert.That(left, Is.EqualTo(right));
+                        return true;
+                    
+                    default:
+                        return false;
+                }
+            }
+        }
+
     }
 }
