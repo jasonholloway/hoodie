@@ -43,9 +43,16 @@ namespace Hoodie.GroupMaps
         public GroupMap<N, V> Combine(GroupMap<N, V> left, GroupMap<N, V> right)
         {
             var nodes = right.Index.Keys;
-
+            
             var leftGroups = nodes.SelectMany(n => left[n]).ToArray();
             var rightGroups = nodes.SelectMany(n => right[n]);
+            
+            //instead of gathering everything up into one big heap up front
+            //need to explore the graph; we choose the right disjunct
+            //and in choosing it, we could even simplify the right hand graph
+            //
+            //
+            //
 
             var leftMap1 = leftGroups.Aggregate(left, (m, g) => m.Remove(g));
 

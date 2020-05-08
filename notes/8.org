@@ -802,35 +802,191 @@ RemoveGroups
 simple enough: groups simply overlap
 
 
+-------------------------------------
 
+both right and left have their disjuncts;
+but we're collecting by choice onto the left because we expect it to be the larger
 
+the idea is (now) to collect together actions to finally perform on the left graph
 
+our only ops are to remove and to add groups
+that's all we can fundamentally do...
+so these are the actions we have to plan
 
+as soon as we visit the first rh option, if there are any overlaps, we know that those overlaps must be removed; though
+we don't know what we'll add in its place yet
 
+enumerating the rh options must itself proceed portwise, as the structure of the disjunctions is only given here
 
+each disjunction must contribute a separate addition
 
+but responsibility for structuring the groups is given to the sink graph; we just need to know what groups to create
 
+it's true that each rh graph must be combined into the left
+we could just then enumerate these groups
 
+each rh group then intersects with groups on the left;
+each rh group contributes its own replacements for graphs on the left too
 
+this is not true: two separate groups on the right, via the intersession of a common overlapper, will create only one on the right
 
+---
 
+each point on the right could cast its vote, so to speak, and the votes would be coalesced into a consistent set of groups
+each vote would suggest an action, with source groups and output groups
 
+the source groups would all finally be removed before the congealed output groups were emplaced
 
+well - output groups wouldn't have to be deduced up front, as the collected source groups would always be combined
+so, as we enumerate through the rh port options, we gather these clumps of combinable groups that should be represented
 
+the question becomes, how should these specs be grouped together to preserve the structure necessary in the output?
+which ones can be combined into big groups, and which ones can't?
 
+by themselves, these atoms of activity will multiply the disjunction
+but the act that achieves this great loss is the flattening of them all - and we're not there yet, we've not yet committed that crime!
 
+--
 
+what we really have is a graph of groups, some of which are linked by disjunctions of the entire group
+whereas others ar enot linked at all, and can sit next to each other if need be
 
+so per-port indexes are on projection of this underlying structure, and the hashset of groups its an efficient flattening of the same
 
+there is though a real structure underneath
+now we have to conceive of it in various scenarios
 
+---------
 
+1: A B
+2: A   
+3:   B
+4: C
 
+(A^B)|C
 
+-------
 
+1: A B   C   AC BC
+2: A   *   = AC
+3:   B   C      BC
 
+(A^B)*C = AC^BC
 
+-------
 
+1: A B   D   AD BD
+2: A   *   = AD
+3:   B          BD
+4: C         C
 
+here it's obvious this is lacking: the C is always available in both disjunctions
+
+(A^B)|C*D = (AD^BD)|C
+
+the above bit is also needed to represent it all fully
+
+------
+
+though - fully? who knows... maybe every graph of relations can be simplified so
+though I doubt it
+
+so, the best representation is the graph of relations between groups
+
+when adding in a group, it must take up a default 'or' relationship to the original groups of the graph, as a completely new possibility
+
+though seemingly freefloating, is does even by this enter proper disjuntion relationships
+each port can only be bound to one group
+
+this then raises doubts about how simple an 'addition' really is
+
+well - an addition is a simple way to relate to the whole - the C above just sits there, circumspect
+it does not combine, it is added simply into the graph
+
+but if it's in contention, then it seems it must either combine or it must add
+which will it do?
+
+but the two actions are differently paramterised: adding is just a shovelling in of a new possibility; combining requires targeting with other combinees
+so the simpler of the two is certainly adding; and interfering with the possibilities of the graph is not an unreasonable thing for it to do
+
+the standard OR isn't much of a relation at all: in fact it is the absence of a relation, other than that at least one must be true
+and so we realise: it's not an OR, as both sides of it must be true... it's actually an '&'!
+
+------------------
+
+1: A B   D   AD BD
+2: A   *   = AD
+3:   B          BD
+4: C         C
+
+(A^B)&C*D = (AD^BD)&C
+
+----
+
+1: A B
+2: A   C
+3:   B C
+
+(A^B^C)
+
+----
+
+1: A B
+2: A
+3:   B C
+
+(A^B^C)
+
+but A and C are compatible here...
+....
+
+-----
+
+1: A B
+2: A   C
+
+A^B,
+A^C
+
+this is a better representation: the relationship between B and C is just left undetermined
+
+----
+
+1: A B
+2: A
+3:   B C
+
+A^B,
+B^C
+
+the top grid does contain the bottom, in a way, as in, with some risk of ambiguity, or with added weight of inference,
+you can work back to regain these relationships
+the rules of the place are such to allow distillation of these relationships
+
+they are derived like per-port indices are derived
+
+indices are helpful in navigation
+maybe the derived group relationships are helpful in merging
+maybe they too should be maintained by the graph
+
+when adding, do we want to be able to add in a relationship at the same time?
+if we did this, combination would be done by not specifying any relationship
+
+--
+
+if relationships were treated as fundamental, not just as derived from the set of groups themselves,
+we could pile in groups with relationships, store them as such, and only combine them lazily
+basically the state pre-combination would be suspended within the structure
+
+this would stop us having to preemptively merge and studiously maintain integrity
+but - the inner combinations would be costly down the road; memoisatoin may be possible here - hmm nope nope nope
+
+even if we do specify relationship when we add the group, this would boil down to more primitive add/remove ops underneath
+
+-----
+
+so - when we add/remove groups, we should also maintain an index of group relationships !!!!!!!!!!!
+alongside the per-port indexes already known
 
 
 
