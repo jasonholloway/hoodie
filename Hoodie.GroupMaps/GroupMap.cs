@@ -27,6 +27,8 @@ namespace Hoodie.GroupMaps
 
         public GroupMap<N, V> Add(Group<N, V> group)
         {
+            if (group.IsEmpty) return this;
+            
             var groups = Groups.Add(group);
 
             var index = group.Nodes.Aggregate(
@@ -42,6 +44,8 @@ namespace Hoodie.GroupMaps
 
         public GroupMap<N, V> Remove(Group<N, V> group)
         {
+            if (group.IsEmpty) return this;
+            
             var groups = Groups.Remove(group);
 
             var index = group.Nodes.Aggregate(

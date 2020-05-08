@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Hoodie.GroupMaps
 {
     public static class GroupMapExtensions
@@ -10,18 +8,10 @@ namespace Hoodie.GroupMaps
             return monoid.Combine(left, right);
         }
         
-        public static GroupMap<N, string> Combine<N>(this GroupMap<N, string> left, GroupMap<N, string> right)
+        public static GroupMap<N, Sym> Combine<N>(this GroupMap<N, Sym> left, GroupMap<N, Sym> right)
         {
-            var monoid = new GroupMapMonoid<N, string>(new GroupMonoid<N, string>(new StringMonoid()));
+            var monoid = new GroupMapMonoid<N, Sym>(new GroupMonoid<N, Sym>(new SymMonoid()));
             return monoid.Combine(left, right);
         }
-
-
-        // public static GroupMap<N, V> JoinGroups<N, V>(this GroupMap<N, V> map, IEnumerable<Group<N, V>> leftGroups)
-        // {
-        //     
-        // }
-        
-        
     }
 }

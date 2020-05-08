@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 
 namespace Hoodie.GroupMaps
@@ -37,10 +40,20 @@ namespace Hoodie.GroupMaps
         
         public GroupMap<N, V> Zero => GroupMap<N, V>.Empty;
 
-        public GroupMap<N, V> Combine(GroupMap<N, V> left, GroupMap<N, V> right) 
-            => right.Groups.Aggregate(
-                    left,
-                    (ac, g) => ac.Add(g));
+        public GroupMap<N, V> Combine(GroupMap<N, V> left, GroupMap<N, V> right)
+        {
+            var nodes = right.Index.Keys;
+
+            var leftGroups = nodes.SelectMany(n => left[n]).ToArray();
+            var rightGroups = nodes.SelectMany(n => right[n]);
+
+            var leftMap1 = leftGroups.Aggregate(left, (m, g) => m.Remove(g));
+
+            var bigGroup = leftGroups.Concat(rightGroups)
+                .Aggregate(_monoidGroup.Zero, _monoidGroup.Combine);
+
+            return leftMap1.Add(bigGroup);
+        }
     }
 
     public class StringMonoid : IMonoid<string>
@@ -49,5 +62,52 @@ namespace Hoodie.GroupMaps
         public string Combine(string left, string right)
             => left + right;
     }
-    
+
+
+
+    public class SymMonoid : IMonoid<Sym>
+    {
+        public Sym Zero { get; }
+            = new Sym(ImmutableSortedSet<char>.Empty);
+
+        public Sym Combine(Sym left, Sym right)
+            => new Sym(left.Chars.Union(right.Chars));
+    }
+
+    public struct Sym : IEquatable<Sym>
+    {
+        public readonly ImmutableSortedSet<char> Chars;
+
+        internal Sym(ImmutableSortedSet<char> chars)
+        {
+            Chars = chars;
+        }
+
+        public override string ToString()
+            => string.Join("", Chars);
+
+        public static Sym From(char @char)
+            => new Sym(ImmutableSortedSet<char>.Empty.Add(@char));
+
+        public static Sym From(string @string)
+            => new Sym(@string.Aggregate(
+                ImmutableSortedSet<char>.Empty, 
+                (ac, c) => ac.Add(c)));
+
+        public static implicit operator Sym(char @char)
+            => From(@char);
+
+        public static bool operator ==(Sym left, Sym right) => left.Equals(right);
+        public static bool operator !=(Sym left, Sym right) => !(left == right);
+
+
+        public bool Equals(Sym other)
+            => Chars.SetEquals(other.Chars);
+
+        public override bool Equals(object obj) 
+            => obj is Sym other && Equals(other);
+
+        public override int GetHashCode() 
+            => (Chars != null ? Chars.Aggregate(1, (ac, c) => ac + c.GetHashCode()).GetHashCode() : 0);
+    }
 }

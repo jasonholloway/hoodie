@@ -24,6 +24,8 @@ namespace Hoodie.GroupMaps
             _hash = nodes.Aggregate(1, (h, n) => h + n.GetHashCode() * 13) + value.GetHashCode();
         }
 
+        public bool IsEmpty => Nodes.IsEmpty;
+
         public override string ToString()
             => $"([{string.Join(",", Nodes)}], {Value})";
 

@@ -7,13 +7,63 @@ using NUnit.Framework;
 
 namespace Hoodie.GroupMaps.Tests
 {
+    public class SymTests
+    {
+        [Test]
+        public void Equality()
+        {
+            Assert.Multiple(() =>
+            {
+                Assert.That(Sym.From('A'), Is.EqualTo(Sym.From('A')));
+                Assert.That(Sym.From("HAMSTER"), Is.EqualTo(Sym.From("HAMSTER")));
+            });
+        }
+
+        [Test]
+        public void HashCodes()
+        {
+            var syms = new Sym[]
+            {
+                'A', 'A', 'A'
+            };
+
+            var hashes = syms.Select(s => s.GetHashCode()).ToHashSet();
+            Assert.That(hashes, Has.Count.EqualTo(1));
+        }
+    }
+    
+    
     public class GroupMapTests
     {
         [Test]
-        public void GroupMap_Equality()
+        public void Group_Equality()
         {
-            var map1 = Map((1, 2), "woo");
-            var map2 = Map((1, 2), "woo");
+            var g1 = Group((1, 2), 'A');
+            var g2 = Group((1, 2), 'A');
+            Assert.That(g2, Is.EqualTo(g1));
+
+            var h1 = ImmutableHashSet<Group<int, Sym>>
+                        .Empty.Add(g1);
+            var h2 = ImmutableHashSet<Group<int, Sym>>
+                        .Empty.Add(g1);
+            
+            Assert.That(h1, Is.EqualTo(h2));
+            Assert.That(h1.SetEquals(h2));
+        }
+        
+        [Test]
+        public void GroupMap_Equality1()
+        {
+            var map1 = Map(1, 'A');
+            var map2 = Map(1, 'A');
+            Assert.That(map2, Is.EqualTo(map1));
+        }
+        
+        [Test]
+        public void GroupMap_Equality2()
+        {
+            var map1 = Map((1, 2), 'A');
+            var map2 = Map((1, 2), 'A');
             Assert.That(map2, Is.EqualTo(map1));
         }
         
@@ -31,7 +81,7 @@ namespace Hoodie.GroupMaps.Tests
         public void EmptyOne_AndOne()
         {
             var map1 = EmptyMap;
-            var map2 = Map(1, "one");
+            var map2 = Map(1, 'A');
 
             var combined = map1.Combine(map2);
             Assert.That(combined, Is.EqualTo(map2));
@@ -40,7 +90,7 @@ namespace Hoodie.GroupMaps.Tests
         [Test]
         public void OneEmpty_AndOne()
         {
-            var map1 = Map(1, "one");
+            var map1 = Map(1, 'A');
             var map2 = EmptyMap;
 
             var combined = map1.Combine(map2);
@@ -51,12 +101,12 @@ namespace Hoodie.GroupMaps.Tests
         public void AddingRemoving()
         {
             var m1 = EmptyMap
-                .Add(Group.From(new[] {1, 2}, "one"));
-            
+                .Add(Group((1, 2), 'A'));
+
             var m2 = EmptyMap
-                .Add(Group.From(new[] {2, 3}, "two"))
-                .Add(Group.From(new[] { 1, 2 }, "one"))
-                .Remove(Group.From(new[] { 2, 3 }, "two"));
+                .Add(Group((2, 3), 'B'))
+                .Add(Group((1, 2), 'A'))
+                .Remove(Group((2, 3), 'B'));
 
             Assert.That(m2, Is.EqualTo(m1));
         }
@@ -64,8 +114,8 @@ namespace Hoodie.GroupMaps.Tests
         [Test]
         public void AddingRemoving_Indices()
         {
-            var group1 = Group.From(new[] {1, 2}, "one");
-            var group2 = Group.From(new[] {2, 3}, "two"); 
+            var group1 = Group((1, 2), 'A');
+            var group2 = Group((2, 3), 'B');
             
             var map = EmptyMap
                 .Add(group1)
@@ -117,6 +167,14 @@ namespace Hoodie.GroupMaps.Tests
                 A * B = AB
                 . . B . AB
                 ");
+        
+        [Test]
+        public void Combine_NonOverlaps()
+            => Interpret(@"
+                A . . . A
+                A * . = A
+                . . B . B
+                ");
 
         [Test]
         public void Combine_Disjuncts()
@@ -125,51 +183,73 @@ namespace Hoodie.GroupMaps.Tests
                 A . * . = AC .
                 . B . C . .  BC
             ");
+
+        [Test]
+        public void BuildAMap()
+        {
+            var map = BuildMap(@"
+                A B
+                A .
+                . B
+            ");
+        }
         
 
-        static GroupMap<int, string> EmptyMap = GroupMap<int, string>.Empty;
+        static GroupMap<int, Sym> EmptyMap = GroupMap<int, Sym>.Empty;
         
-        static GroupMap<int, string> Map(params (int[], string)[] groups)
+        static GroupMap<int, Sym> Map(params (int[], Sym)[] groups)
             => groups.Aggregate(
                 EmptyMap,
-                (m, t) => m.Add(Group.From(t.Item1, t.Item2)));
+                (m, t) => m.Add(GroupMaps.Group.From(t.Item1, t.Item2)));
 
-        static GroupMap<int, string> Map(string val)
-            => Map((new int[0], val));
+        static GroupMap<int, Sym> Map(Sym sym)
+            => Map((new int[0], sym));
         
-        static GroupMap<int, string> Map(int node, string val)
+        static GroupMap<int, Sym> Map(int node, Sym val)
             => Map((new[] { node }, val));
         
-        static GroupMap<int, string> Map((int, int) nodes, string val)
+        static GroupMap<int, Sym> Map((int, int) nodes, Sym val)
             => Map((new[] { nodes.Item1, nodes.Item2 }, val));
         
-        static GroupMap<int, string> Map((int, int, int) nodes, string val)
+        static GroupMap<int, Sym> Map((int, int, int) nodes, Sym val)
             => Map((new[] { nodes.Item1, nodes.Item2, nodes.Item3 }, val));
         
+
+        static Group<int, Sym> Group(int node, Sym sym)
+            => GroupMaps.Group.From(new[] {node}, sym);
         
-        void Interpret(string code)
+        static Group<int, Sym> Group((int, int) nodes, Sym sym)
+            => GroupMaps.Group.From(new[] {nodes.Item1, nodes.Item2}, sym);
+        
+        static Group<int, Sym> Group((int, int, int) nodes, Sym sym)
+            => GroupMaps.Group.From(new[] {nodes.Item1, nodes.Item2, nodes.Item3}, sym);
+
+        GroupMap<int, Sym> BuildMap(string code)
+            => (GroupMap<int, Sym>)Interpret(code);
+        
+        object Interpret(string code)
         {
             var matches = Regex
                 .Matches(code, @"^(?: +([\w\.\*\+\=]+))+", RegexOptions.Multiline);
                 
             var slices = matches
-                .SelectMany((m, y) => m.Groups[1].Captures.Select((c, x) => (y, x, c.Value)))
-                .GroupBy(t => t.x, t => (t.y, t.Value))
-                .Select(g => g.GroupBy(t => t.Value)
-                                .Where(gg => gg.Key != ".")
-                                .Select(gg => Group.From(gg.Select(x => x.y), gg.Key)))
+                .SelectMany((m, y) => m.Groups[1].Captures.Select((c, x) => (y: y + 1, x, v: Sym.From(c.Value))))
+                .GroupBy(t => t.x, t => (t.y, t.v))
+                .Select(g => g.GroupBy(t => t.v)
+                                .Where(gg => gg.Key != '.')
+                                .Select(gg => GroupMaps.Group.From(gg.Select(x => x.y), gg.Key)))
                 .SelectMany(slice => slice switch 
                 {
-                    _ when slice.Any(g => g.Value == "*")
+                    _ when slice.Any(g => g.Value == '*')
                         => new object[] { "*" },
-                    _ when slice.Any(g => g.Value == "=")
+                    _ when slice.Any(g => g.Value == '=')
                         => new object[] { "=" },
                     _ 
                         => (IEnumerable<object>)slice
                 });
 
             var tokens = new Queue<object>(slices);
-            var map = GroupMap<int, string>.Empty;
+            var map = GroupMap<int, Sym>.Empty;
             
             while (tokens.Any())
             {
@@ -178,10 +258,12 @@ namespace Hoodie.GroupMaps.Tests
                     || ReadEquals(ref map);
             }
 
-            bool ReadMap(ref GroupMap<int, string> map)
+            return map;
+
+            bool ReadMap(ref GroupMap<int, Sym> map)
             {
                 if (!tokens.Any()) return false;
-                if (tokens.Peek() is Group<int, string> group)
+                if (tokens.Peek() is Group<int, Sym> group)
                 {
                     tokens.Dequeue();
                     map = map.Add(group);
@@ -192,7 +274,7 @@ namespace Hoodie.GroupMaps.Tests
                 return false;
             }
             
-            bool ReadMulti(ref GroupMap<int, string> left)
+            bool ReadMulti(ref GroupMap<int, Sym> left)
             {
                 if (!tokens.Any()) return false;
                 switch (tokens.Peek())
@@ -200,7 +282,7 @@ namespace Hoodie.GroupMaps.Tests
                     case "*":
                         tokens.Dequeue();
                         
-                        var right = GroupMap<int, string>.Empty;
+                        var right = GroupMap<int, Sym>.Empty;
                         if (!ReadMap(ref right))
                         {
                             throw new InvalidOperationException("'*' needs groups to its right!");
@@ -214,7 +296,7 @@ namespace Hoodie.GroupMaps.Tests
                 }
             }
 
-            bool ReadEquals(ref GroupMap<int, string> left)
+            bool ReadEquals(ref GroupMap<int, Sym> left)
             {
                 if (!tokens.Any()) return false;
                 switch (tokens.Peek())
@@ -222,7 +304,7 @@ namespace Hoodie.GroupMaps.Tests
                     case "=":
                         tokens.Dequeue();
 
-                        var right = GroupMap<int, string>.Empty;
+                        var right = GroupMap<int, Sym>.Empty;
                         if (!ReadMap(ref right))
                         {
                             throw new InvalidOperationException("'*' needs groups to its right!");
