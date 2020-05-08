@@ -140,21 +140,21 @@ namespace Hoodie.GroupMaps.Tests
 
         [Test]
         public void SimpleEquality()
-            => Interpret(@"
+            => Test(@"
                  A . A
                  A = A
              ");
         
         [Test]
         public void Equality_OfDisjuncts()
-            => Interpret(@"
+            => Test(@"
                  A B . B A
                  A B = B A
              ");
         
         [Test]
         public void Equality_OfDisjuncts2()
-            => Interpret(@"
+            => Test(@"
                  A . . A
                  . B = B
                  C D . C D
@@ -162,7 +162,7 @@ namespace Hoodie.GroupMaps.Tests
         
         [Test]
         public void Combine_Overlaps()
-            => Interpret(@"
+            => Test(@"
                 A . . . AB
                 A * B = AB
                 . . B . AB
@@ -170,7 +170,7 @@ namespace Hoodie.GroupMaps.Tests
         
         [Test]
         public void Combine_NonOverlaps()
-            => Interpret(@"
+            => Test(@"
                 A . . . A
                 A * . = A
                 . . B . B
@@ -178,7 +178,7 @@ namespace Hoodie.GroupMaps.Tests
 
         [Test]
         public void Combine_Disjuncts()
-            => Interpret(@"
+            => Test(@"
                 A B . C . AC BC
                 A . * . = AC .
                 . B . C . .  BC
@@ -192,6 +192,25 @@ namespace Hoodie.GroupMaps.Tests
                 A .
                 . B
             ");
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(map[1], Is.EquivalentTo(new[]
+                {
+                    Group((1, 2), 'A'), 
+                    Group((1, 3), 'B')
+                }));
+                
+                Assert.That(map[2], Is.EquivalentTo(new[]
+                {
+                    Group((1, 2), 'A'), 
+                }));
+                
+                Assert.That(map[3], Is.EquivalentTo(new[]
+                {
+                    Group((1, 3), 'B')
+                }));
+            });
         }
         
 
@@ -225,9 +244,9 @@ namespace Hoodie.GroupMaps.Tests
             => GroupMaps.Group.From(new[] {nodes.Item1, nodes.Item2, nodes.Item3}, sym);
 
         GroupMap<int, Sym> BuildMap(string code)
-            => (GroupMap<int, Sym>)Interpret(code);
+            => (GroupMap<int, Sym>)Test(code);
         
-        object Interpret(string code)
+        object Test(string code)
         {
             var matches = Regex
                 .Matches(code, @"^(?: +([\w\.\*\+\=]+))+", RegexOptions.Multiline);
