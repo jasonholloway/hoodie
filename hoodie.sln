@@ -8,8 +8,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hoodie.GroupMaps", "Hoodie.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hoodie.GroupMaps.Tests", "Hoodie.GroupMaps.Tests\Hoodie.GroupMaps.Tests.csproj", "{845A3BF2-583A-45F8-A704-7A5F505BC5D0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hoodie.Groups.Tests", "Hoodie.Groups.Tests\Hoodie.Groups.Tests.csproj", "{76DBE3C7-E0D1-4A8C-BB6E-70EA1D8BFE37}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,9 +30,5 @@ Global
 		{845A3BF2-583A-45F8-A704-7A5F505BC5D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{845A3BF2-583A-45F8-A704-7A5F505BC5D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{845A3BF2-583A-45F8-A704-7A5F505BC5D0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{76DBE3C7-E0D1-4A8C-BB6E-70EA1D8BFE37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76DBE3C7-E0D1-4A8C-BB6E-70EA1D8BFE37}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{76DBE3C7-E0D1-4A8C-BB6E-70EA1D8BFE37}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{76DBE3C7-E0D1-4A8C-BB6E-70EA1D8BFE37}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

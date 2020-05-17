@@ -1,0 +1,36 @@
+Enumerating disjunctions
+
+A B   D   DA DBC
+    *   = 
+A C   D   DA DBC
+
+A^B
+A^C
+
+in the above, it might seem that B and C need to be enumerated separately, but they don't
+they can be tackled together
+
+so we're not enumerating each group, but groups of groups
+the next question is... how to do that?
+
+we want to invert the negative disjunction operator into a positive conjunction
+
+A^B =~ B&C
+A^C
+
+all groups without a disjunction separating them
+are conjoined
+
+we start off with one group and try to take all others we aren'tin disjunction with
+
+
+
+
+
+
+
+
+
+
+
+

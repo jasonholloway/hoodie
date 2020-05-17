@@ -134,8 +134,8 @@ namespace Hoodie.GroupMaps.Tests
 
         internal static readonly Comparison<Map<int, Sym>> MapComp = (m1, m2) =>
         {
-            var groups1 = m1.Groups.Select(g => g.Item2.Simple()).ToHashSet();
-            var groups2 = m2.Groups.Select(g => g.Item2.Simple()).ToHashSet();
+            var groups1 = m1.Groups.Select(g => g.Simple()).ToHashSet();
+            var groups2 = m2.Groups.Select(g => g.Simple()).ToHashSet();
             return groups1.SetEquals(groups2) ? 0 : -1;
         };
 

@@ -10,59 +10,6 @@ namespace Hoodie.GroupMaps
         T Combine(T left, T right);
     }
 
-    public class GroupMonoid<N, V> : IMonoid<Group<N, V>>
-    {
-        readonly IMonoid<V> _monoidV;
-
-        public GroupMonoid(IMonoid<V> monoidV)
-        {
-            _monoidV = monoidV;
-        }
-        
-        public Group<N, V> Zero 
-            => Group.From(Enumerable.Empty<N>(), _monoidV.Zero);
-        
-        public Group<N, V> Combine(Group<N, V> left, Group<N, V> right)
-            => new Group<N, V>(
-                left.Nodes.Union(right.Nodes),
-                ImmutableHashSet<int>.Empty, 
-                _monoidV.Combine(left.Value, right.Value));
-    }
-
-    public class GroupMapMonoid<N, V> : IMonoid<Map<N, V>>
-    {
-        readonly IMonoid<Group<N, V>> _monoidGroup;
-
-        public GroupMapMonoid(IMonoid<Group<N, V>> monoidGroup)
-        {
-            _monoidGroup = monoidGroup;
-        }
-        
-        public Map<N, V> Zero => Map<N, V>.Empty;
-
-        public Map<N, V> Combine(Map<N, V> left, Map<N, V> right)
-        {
-            var nodes = right.Index.Keys;
-            
-            var leftGroups = nodes.SelectMany(n => left[n]).ToArray();
-            var rightGroups = nodes.SelectMany(n => right[n]);
-            
-            //instead of gathering everything up into one big heap up front
-            //need to explore the graph; we choose the right disjunct
-            //and in choosing it, we could even simplify the right hand graph
-            //
-            //
-            //
-
-            var leftMap1 = leftGroups.Aggregate(left, (m, g) => m.Remove(g));
-
-            var bigGroup = leftGroups.Concat(rightGroups)
-                .Aggregate(_monoidGroup.Zero, _monoidGroup.Combine);
-
-            return leftMap1; //.Add(GroupMap.Lift(bigGroup));
-        }
-    }
-
     public class StringMonoid : IMonoid<string>
     {
         public string Zero => "";

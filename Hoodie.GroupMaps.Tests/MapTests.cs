@@ -112,7 +112,49 @@ namespace Hoodie.GroupMaps.Tests
             => Test(@"
                 A B . C . AC BC
                 A . * . = AC .
-                . B . C . .  BC
+                . B . C . AC BC
+            ");
+
+        [Test]
+        public void Combine_ComplexDisjuncts1()
+            => Test(@"
+                A . . D . ACD .
+                A B * . = ACD B
+                . B . . . .   B
+                . C . D . ACD .
+            ");
+        
+        [Test]
+        public void Combine_ComplexDisjuncts2()
+            => Test(@"
+                A . . . D . ACD BD
+                A B . * . = ACD BD
+                . B . . . . .   BD 
+                . B C . D . ACD BD
+            ");
+        
+        [Test]
+        public void Combine_ComplexDisjuncts3()
+            => Test(@"
+                A . . . D . ABD ACD 
+                . B . * . = ABD .
+                . B C . D . ABD ACD
+            ");
+        
+        [Test]
+        public void Combine_DuplexDisjuncts1()
+            => Test(@"
+                . . . C . .  AC 
+                A * B C = AB AC
+                A . . . . AB AC
+            ");
+        
+        [Test]
+        public void Combine_DuplexDisjuncts2()
+            => Test(@"
+                A . . . D . A AD .  BD 
+                . B * C D = C AD BC BD
+                A B . . . . A AD BC BD
             ");
     }
 

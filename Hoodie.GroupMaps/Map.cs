@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 
 namespace Hoodie.GroupMaps
@@ -16,9 +17,9 @@ namespace Hoodie.GroupMaps
         readonly int _gid = 0;
         readonly ImmutableSortedDictionary<int, Group<N, V>> _groups;
         readonly ImmutableDictionary<N, ImmutableHashSet<int>> _index;
-        
-        public IEnumerable<(int, Group<N, V>)> Groups 
-            => _groups.Select(kv => (kv.Key, kv.Value));
+
+        public IEnumerable<Group<N, V>> Groups
+            => _groups.Values;
 
         public IDictionary<N, ImmutableHashSet<int>> Index
             => _index;
@@ -61,38 +62,72 @@ namespace Hoodie.GroupMaps
             if (right._groups.IsEmpty) return left;
             else
             {
-                var (gid, group) = right.Groups.First();
-                right = right.RemoveGroup(gid);
+                var toAdd = right.Groups.First();
+                right = right.RemoveGroup(toAdd.Gid);
 
-                var hits = group.Nodes
+                var hits = toAdd.Nodes
                     .SelectMany(n => left.LookupIndexed(n))
-                    .Distinct();
-                
-                //the hits are structured by their disjunctions
-                //for each disjunction, we add in a new group
-                //though we can't just enumerate disjunctions
+                    .Select(i => left._groups[i])
+                    .ToImmutableHashSet();
 
-                (left, group) = hits.Aggregate(
-                    (left, group),
-                    (ac, hid) =>
-                    {
-                        var (l, g) = ac;
-                        var hit = l._groups[hid];
-                        return (
-                            l.RemoveGroup(hid), 
-                            Group.From(
-                                g.Nodes.Concat(hit.Nodes), 
-                                mV.Combine(g.Value, hit.Value)));
-                    });
+                if (hits.IsEmpty)
+                {
+                    left = left.Add(toAdd.Nodes, toAdd.Value);
+                }
+                else
+                {
+                    left = 
+                        ClumpHits(hits)
+                            .Aggregate(left,
+                                (l, clump) => clump
+                                    .Aggregate(l, (ll, g) => ll.RemoveGroup(g.Gid))
+                                    .Add(
+                                        toAdd.Nodes
+                                            .Concat(clump.SelectMany(g => g.Nodes))
+                                            .ToImmutableHashSet(), 
+                                        clump.Aggregate(toAdd.Value, (v, g) => mV.Combine(v, g.Value))
+                                        )
+                                );
+                }
                 
-                left = left.Add(group.Nodes, group.Value);
                 return Bounce(left, right, mV);
+                
+                IEnumerable<ImmutableHashSet<Group<N, V>>> ClumpHits(ImmutableHashSet<Group<N, V>> _hits)
+                {
+                    switch (_hits.Count)
+                    {
+                        case 0: return Enumerable.Empty<ImmutableHashSet<Group<N, V>>>();
+                        case 1: return new[] { _hits };
+                        default:
+                        {
+                            var head = _hits.First();
+                            var tail = _hits.Remove(head);
+
+                            var clumps = ClumpHits(tail
+                                    .Where(g => !g.Disjuncts.Contains(head.Gid))
+                                    .ToImmutableHashSet())
+                                .Select(set => set.Add(head))
+                                .ToImmutableHashSet();
+
+                            if (clumps.IsEmpty)
+                            {
+                                clumps = new[] { new[] { head }.ToImmutableHashSet() }.ToImmutableHashSet();
+                            }
+
+                            var tail2 = clumps
+                                .SelectMany(set => set)
+                                .Aggregate(tail, (ac, g) => ac.Remove(g));
+
+                            return clumps
+                                .Concat(ClumpHits(tail2));
+                        }
+                    }
+                }
             }
         }
 
         public Map<N, V> Add(Map<N, V> other)
             => other.Groups
-                .Select(t => t.Item2)
                 .Aggregate(this,
                     (ac, g) => ac.Add(g.Nodes, g.Value));
         
@@ -114,7 +149,7 @@ namespace Hoodie.GroupMaps
 
             return new Map<N, V>(
                 _gid + 1,
-                groups2.Add(_gid, new Group<N, V>(newNodes, disjuncts, newVal)),
+                groups2.Add(_gid, new Group<N, V>(_gid, newNodes, disjuncts, newVal)),
                 newNodes.Aggregate(
                     _index,
                     (ac, n) => ac.TryGetValue(n, out var indexed) 
