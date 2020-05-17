@@ -988,235 +988,330 @@ even if we do specify relationship when we add the group, this would boil down t
 so - when we add/remove groups, we should also maintain an index of group relationships !!!!!!!!!!!
 alongside the per-port indexes already known
 
+and there is only one kind of relationship: disjunction
 
+but... how would this help us when it comes to merging?
 
+we wouldn't have to enumerate via the port index - we'd enumerate the groups for themselves, thus simplifying things
+we defo need to know the relationships in the merging - doing it this way happily splits off half the work
+if we can track these relationships, the final merge algorithm will certainly be simpler, because it won't have to
+regather this information from scratch
 
+----------------------------
 
+we say - this is a group and it is disjunct from these other groups
+we can say it is individually disjunct from another group of groups
 
+if we want to combine one group into a variously disjunct graph
 
 
+1: A       C   CA   C
+2: A ^ B * . = CA ^ B
+3:     B   .        B
 
+A^B
 
+C, in intersecting with A, must multiply across all disjuncts in which A as a group is involved
 
 
+A     D   AD D
+A B * . = AD B
+  C   .      C
 
+A^B       AD^(D,B)
+          C
 
+---------------------
 
+so, questions still around how to structure the actual storage (although like an actual graph seems like a go-er)
+what needs some satisficing now is - how will the merge happen even with a happily-preserved graph?
 
+the thing is with disjunctions - they cover all the possible ports of each disjunct, and so the mergee doesn't need to intersect with more than a single
+disjunct to have to cover them all
 
+or rather, as disjunctions happen at the port level...
+the disjuncts to spread across are determined by the coverage of the mergee, by its intersection with some disjunctions
 
+if the mergee is a group of a single port, then it only has to care about the disjunct spaces that affect it - ie not all of them
 
+disjunctions again are per-port rather than between groups as a whole
 
+when merging, we'd enumerate all the port disjunct intersected by the source group
+and gather them into a pliable, fidelous structure - this intermediate representation of only the groups we need to care about, would contain information about disjuncts
+as previously conceived - 
 
+part of the plan phase, where we gather old groups, and come up with our replacements
+then when we apply them, we know to remove the old ones before adding the new ones
 
+-----
 
+its like the gathered ops needed to do the merge would have to follow the grain of the source graph
+if there are two source groups in disjunction, they should be considered separately
+and add up to two separate adds
 
+for every group disjunction (as opposed to port disjunction) a new set of replace/adds should be emitted
 
+it's like, again, we should be enumerating disjunctions in the source
+duplications in removals of target groups are fine because the operation is idempotent - already-removed left groups can't be removed twice, but they won't complain about it
 
+so, how to enumerate disjunctions?
 
+(it'd also be possible to limit the rhs to a single group - each binding would then be merged in one at a time)
 
+how to enumerate disjunctions?
+well - how about just enumerating groups?
 
+no - because some rhs groups shouldn't be added separately
+some are not in disjunction with each other, and would be merged as one into the left
 
+we must enumerate the groups somehow though, and a common non-disjunct group may be enumerated first
+this would create a single replace/add op - although, this would tie in whatever other groups were linked to it via overlap
 
+in merging one group, we need to follow not just the groups that are immediately intersected by it, but the secondary groups that are intersected by each target group in the source
+it's like a game of table tennis, paddling back and forth
 
+the first rh group is taken, and in being gathered it is uprooted, leaving a rh graph denuded - this is the current graph we carry with us
+and in each mirroring, we gather what is to merged together in a branching structure, until we have a denuded left and right
+at this point we can add in our mergeables into the left
 
+questionable whether we need to denude the left - in fact do wereally need to denude the right too?
+NO we don't remove, as different disjuncts should be able to find the same secondary group twice
 
+when we enumerate each as a source however, won't we gather the same string of groups just from the other end?
+these can be deduped in the intermediate step maybe
 
+it won't be found twice if it has been removed from the graph though - 
 
+---------------------------------
 
+so - the probelm is that forked disjunctions won't be aware of joins 
+we'll start off ping-ponging from two disjuncts we are enumerating; we end up lining up two identical sets of merges
 
+in fact we don't even need disjuncts for this to occur, but we can usually sidestep the problem by removing already-projected groups from the graph we are enumerating
+this is more complicated in the presence of disjuncts however
 
+in the presence of disjuncts, we'd either ignore the disjunction in our simplifying of the source graph,
+which would lead to common possibilities being expunged too soon
+or we'd gather the denuded source in line with the disjunctions, and then get duplication because we hadn't expunged it from the original root disjunct
 
+what we need is a join to match the fork
 
+since what we're collecting is effectively a set of removables, we could say - at the point of joining back into the whole, if a removal appears in each disjunct enumerated,
+then it should also be communicated back to the whole
 
+(our simplest care is however to rustle up an algorithm that works except for disjunctions)
 
+----
 
+but we are in the business not just of accumulating denudation on the right, but also on the left - we are perfectly balanced at this point
 
+and as we paddle leftward, it is impossible on the serve that we don't enumerate the opposing disjunct fully - uncertainty on this point only intrudes on the rebound
+and rebounds bounce to each side, with the same implied dynamic: some collocated disjuncts will be merged and entirely replaced, while others will be only partially taken
+these partials should be left sitting in their spot, await future merges
 
+this partial won't be removed totally from the root if the enumeration of possibilities isn't at each stage total - ie if there's one enumerated disjunct in the chain that
+leaves it alone, it will remain available in the root
 
+---
 
+fork and join, fork and join, fork and join
 
+disjuncts are what, per group or per port? I've been imagining them as being per group, though per-port is the original and most fidelous index
 
+the big problem with per-port is that the disjunction can't be exhaustive (can it?)
+it's possible that in some worlds a port may be connected only to itself, while in others it will be connected to a larger group
+in this case, enumerating the disjuncts per port would only(?) show one of these possibilities
 
+each port, no matter what other options it has, is always possibly self-connected only - the ever-available escape-hatch
+as such, each graph as a whole also has a foundational option of self-identity, which is completely devoid of information, other than saying /it is/
 
+to enter the informational content of the graph, we have to make the initial choice to read it beyond acknowledging it
 
+the possibility of identity should be included in the merge - though this will leave the rhs unaffected
+if this path of ignorance is chosen, it would seem that the lhs would remain exactly as it is via such a merge
+that is, even after a graph-wide merge, the original should still be there as a possibility
+maybe we implicitly choose by invoking the merge in the first place
 
+per-port too, this is problematic, because it implies each port, once merged, retains not just its possibility of self-identity, but also it's two input originals
+each choosing of identity is a 'do-nothing' that leaves us stuck in time
 
+the problem with it is the idea that we can progress at one point but stay stuck in the past at another. This is wrong: everything must be consistent.
+Choosing not to choose is ok, as long as that doesn't coexist with choice in the same frame
 
+So - we can choose port identity only when we have made no other implicating choice - it's only available /right at the beginning/ and soon vanishes
 
+but we're saying the identity is commonly available in the empty space of the graph; this is because it is untouched, and so no choice has touched it
 
+---
 
+identity should then be an explicit option in disjuncts where it is available
 
+it should be explicitly available in each first choice (though its projection would achieve little)
+but when we make one choice, it's extinction should follow
 
+this has repercussions now for per-port indexing and its mechanism:
+when we add groups in to a graph, it seems identity should always be represented in the indices
 
+and this is not being pedantic, despite appearances - otherwise it implies we have to choose for each port,
+whereas a port may very much retain its option of identity even after other choices on the graph
 
+so if we want per-port indexing, we should explicitly retain identity as an option
+but as soon as we make one choice, we rule out and expunge these identities elsewhere
 
+---
 
+where does this leave us with our merging?
 
+it suggests we're back in the world of per-graph disjunctions
 
+and calls into question the simplicity of adding - if all we really have is a set of groups
+how can we know if one set is optional? easy - because all sets are initially optional
 
+other indices could then be derived from the primal set of groups
 
+but how would we represent intermediate graphs, where this implicit identity is expunged?
 
+----
 
+identity isn't /always/ possible however, except for in a pedantic way
 
+if a group sits by itself, it must be true, and identity is not to be considered - it is a waste
+tight, concise, precise = don't represent identity in such cases
 
+it is possible to work out which groups and which ports have a true possiblity of identity given the rest of the graph
+think of it as a process of shrinkwrapping - idiosyncracies in the structure give us alterable gaps, pockets of impossibility
+or as trying to lay an interconnected system of blocks down flat
 
+all this is deducible just from a set of groups - this would keep our base operations to adding and removing groups
+though it's doubtful these are the right base ops for the domain, they would be easiest to maintain
 
+when adding a new group, that new group would register itself as a possibility on each grouped port
+if it is by itself and non-intersecting, it will sit as the one and only choice for its ports
+but if it overlaps with a doubtful intersection, and this is its sole support
+then it must also take on this doubtfulness
 
+certainty kills doubtfulness - a group only needs a little bit of certainty, or nothing at all, to be certain
 
+then if we remove a group, this may remove the certainty attached to other groups, and they might fall into doubtfulness afresh
+so we can continue to add and remove possible groups, but the derivation of indices from these becomes more difficult
 
+removal might also make groups more certain, which is good when we simplify
 
+but less certain? I'm not sure this would actually happen - or at least it shouldn't happen anyway
 
+------
 
+we've basically fallen again into a full graph approach
+well, no - we have retained the simplicity of adding and removing groups
 
+and have taken on work into the GroupMap in making the indices more substantial
 
+adding a group adds a disjunct possibility if it happens to overlap with another
 
+this other may have been happily minding its own business in its own certainty when, with the addition of the new group,
+it became possible that the original graph doesn't actually exist
 
+so adding a group here increases uncertainty
 
+------
 
+disjuncts are the only way in which groups relate to one another at rest
 
+a group only has identity listed as a competing option if it is in disjunction with another 
+and is hanging free
 
+--
 
+if the groups were in a graph, with linkages of disjunction between them, alongside a kind of coexistence
+but to get to this graph, we'd still need to start from a port-by-port account
 
+intersecting groups would all be in disjunction with each other;
+but not necessarily in the same disjunction
 
+again, there would be no root, just a set of groups involved as a kind of primary index
 
+each group added would come into relation with other groups according to its overlaps
 
+the group would be added to the flat set, and then crossrelated
 
+(then the secondary per-port index would be maintained)
 
+and this would help the merging how?
+well, it would certainly be additional information readily available to ease the imagination
 
+--------
 
+HOW WOULD THE MERGE WORK THEN?
 
+that is the big question
+say we have per-port indices that respect identity (we currently don't)
+and a handy graph representation readily available, then what?
 
+we begin by enumerating groups on the right
+we choose any old group, as at the root all are equal, no structure at ths point
 
+we now remove the group from our marginal graph
+and enumerate intersecting groups on the left - this is done by collecting all the possible groups available by the port indices
+and going through these one by one
 
+not all of these will be in disjunction with each other: at this point of gathering groups, we need to know which ones we can gather at the same time
+and which ones need to be enumerated separately
 
+---------
 
+A           DA 
+A B *   D = DA DBC
+  B   C        DBC
+  
 
+---
+CASE 1:  
 
+A
+A B *   D = 
+  B   C D
 
+above, working from C, collects B, and would from there collect D, except for the realisation that D is in an alternate world from C
 
+port indices are needed to collision-detect, gathering the groups we will intersect
 
 
+---
+CASE 2:
 
+A     C
+A B * 
+  B   C
+  
+here C, working via port indices, collects both A and B
+at this point we must realise that A and B are in disjunction
 
 
 
+---------------------------
 
+can we always work out disjunctions just from portsets?
+we can if we take a portsets as a whole across a group: disjunctions are always discoverable there
+which means we don't have to maintain group relations - it's up to the merger to find them
 
+on the rebound however, we need to rearticulate again
+based on our current bag of groups
+as we bounce, we gather our current bag of groups
+this is then used to articulate the denuded graph in front of us
 
+----------------------------
 
+Finding of this morning: both port indices and group relationships are needed
 
+so - this gives us something simple and achievable to aim for
+let's get group relationships going
 
+-----
 
+SIMPLE AND ACHIEVABLE!!!
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- port indices should reflect identity where it's implicated
+- groups should be wrapped, with sets of links also updated
 
 
 

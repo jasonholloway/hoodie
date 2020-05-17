@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Linq;
 
 namespace Hoodie.GroupMaps
@@ -25,11 +24,12 @@ namespace Hoodie.GroupMaps
         
         public Group<N, V> Combine(Group<N, V> left, Group<N, V> right)
             => new Group<N, V>(
-                left.Nodes.Union(right.Nodes), 
+                left.Nodes.Union(right.Nodes),
+                ImmutableHashSet<int>.Empty, 
                 _monoidV.Combine(left.Value, right.Value));
     }
 
-    public class GroupMapMonoid<N, V> : IMonoid<GroupMap<N, V>>
+    public class GroupMapMonoid<N, V> : IMonoid<Map<N, V>>
     {
         readonly IMonoid<Group<N, V>> _monoidGroup;
 
@@ -38,9 +38,9 @@ namespace Hoodie.GroupMaps
             _monoidGroup = monoidGroup;
         }
         
-        public GroupMap<N, V> Zero => GroupMap<N, V>.Empty;
+        public Map<N, V> Zero => Map<N, V>.Empty;
 
-        public GroupMap<N, V> Combine(GroupMap<N, V> left, GroupMap<N, V> right)
+        public Map<N, V> Combine(Map<N, V> left, Map<N, V> right)
         {
             var nodes = right.Index.Keys;
             
@@ -59,7 +59,7 @@ namespace Hoodie.GroupMaps
             var bigGroup = leftGroups.Concat(rightGroups)
                 .Aggregate(_monoidGroup.Zero, _monoidGroup.Combine);
 
-            return leftMap1.Add(bigGroup);
+            return leftMap1; //.Add(GroupMap.Lift(bigGroup));
         }
     }
 

@@ -32,9 +32,9 @@ namespace Hoodie.Tests
     
     public class Bind
     {
-        private readonly GroupMap<Port, DomainSet> _map;
+        private readonly Map<Port, DomainSet> _map;
 
-        private Bind(GroupMap<Port, DomainSet> map)
+        private Bind(Map<Port, DomainSet> map)
         {
             _map = map;
         }
@@ -42,8 +42,8 @@ namespace Hoodie.Tests
         public Bind(params (IEnumerable<Port>, IEnumerable<(Domain, Bind)>)[] entries)
         {
             _map = entries.Aggregate(
-                GroupMap<Port, DomainSet>.Empty,
-                (map, entry) => map.Add(Group.From(entry.Item1, new DomainSet(entry.Item2))));
+                Map<Port, DomainSet>.Empty,
+                (map, entry) => map.Add(GroupMap.Lift(entry.Item1, new DomainSet(entry.Item2))));
         }
 
         public IEnumerable<PortSet> this[Port port]
