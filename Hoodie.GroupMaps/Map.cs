@@ -42,29 +42,59 @@ namespace Hoodie.GroupMaps
             return new Map<N, V>(
                 1,
                 ImmutableSortedDictionary<int, Group<N, V>>
-                    .Empty.Add(0, group),
+                    .Empty
+                    .Add(0, group),
                 nodes.Aggregate(
-                    ImmutableDictionary<N, ImmutableHashSet<int>>.Empty,
+                    ImmutableDictionary<N, ImmutableHashSet<int>>
+                        .Empty,
                     (index, n) => index
                         .Add(n, ImmutableHashSet<int>.Empty.Add(0))
                     )
                 );
         }
 
-        public Map<N, V> Add(Map<N, V> other)
-            => Bounce(this, other);
-        
-        private static Map<N, V> Bounce(Map<N, V> left, Map<N, V> right)
+        public Map<N, V> Combine(Map<N, V> other, IMonoid<V> mV) 
+            => Bounce(this, other, mV);
+
+        private static Map<N, V> Bounce(Map<N, V> left, Map<N, V> right, IMonoid<V> mV)
         {
             if (right._groups.IsEmpty) return left;
             else
             {
                 var (gid, group) = right.Groups.First();
                 right = right.RemoveGroup(gid);
+
+                var hits = group.Nodes
+                    .SelectMany(n => left.LookupIndexed(n))
+                    .Distinct();
+                
+                //the hits are structured by their disjunctions
+                //for each disjunction, we add in a new group
+                //though we can't just enumerate disjunctions
+
+                (left, group) = hits.Aggregate(
+                    (left, group),
+                    (ac, hid) =>
+                    {
+                        var (l, g) = ac;
+                        var hit = l._groups[hid];
+                        return (
+                            l.RemoveGroup(hid), 
+                            Group.From(
+                                g.Nodes.Concat(hit.Nodes), 
+                                mV.Combine(g.Value, hit.Value)));
+                    });
+                
                 left = left.Add(group.Nodes, group.Value);
-                return Bounce(left, right);
+                return Bounce(left, right, mV);
             }
         }
+
+        public Map<N, V> Add(Map<N, V> other)
+            => other.Groups
+                .Select(t => t.Item2)
+                .Aggregate(this,
+                    (ac, g) => ac.Add(g.Nodes, g.Value));
         
         private Map<N, V> Add(ImmutableHashSet<N> newNodes, V newVal)
         {
