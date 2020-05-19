@@ -140,6 +140,18 @@ namespace Hoodie.GroupMaps.Tests
                 . B . * . = ABD .
                 . B C . D . ABD ACD
             ");
+
+        [Test]
+        public void Combine_RhsOnly1()
+            => Test(@"
+                . * A = A
+            ");
+        
+        [Test]
+        public void Combine_RhsOnly2()
+            => Test(@"
+                . * A B = A B
+            ");
         
         [Test]
         public void Combine_DuplexDisjuncts1()
@@ -155,6 +167,26 @@ namespace Hoodie.GroupMaps.Tests
                 A . . . D . A AD .  BD 
                 . B * C D = C AD BC BD
                 A B . . . . A AD BC BD
+            ");
+        
+        [Test]
+        public void Combine_DuplexDisjuncts3()
+            => Test(@"
+                A B * C D = AC AD BC BD
+            ");
+        
+        [Test]
+        public void Combine_DuplexDisjuncts4()
+            => Test(@"
+                A . . C . AC C
+                . B * . = .  B
+            ");
+        
+        [Test]
+        public void Combine_DuplexDisjuncts5()
+            => Test(@"
+                A . . . A
+                . * B = B
             ");
     }
 
