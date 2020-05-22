@@ -90,6 +90,13 @@ namespace Hoodie.GroupMaps.Tests
             var combined = map1.Combine(map2);
             Assert.That(combined, Is.EqualTo(map1));
         }
+
+        [Test]
+        public void Combine_Empties()
+            => Test(@"
+                . . . . .
+                . * A = A
+            ");
         
         [Test]
         public void Combine_Overlaps()
@@ -98,6 +105,18 @@ namespace Hoodie.GroupMaps.Tests
                 A * B = AB
                 . . B . AB
                 ");
+        
+        //why does the above not have identity available? but the below does...?
+        //it's as if identity is available, only it is treated as worthless, the ever-present identity
+        //yet the one below is for some reason meaningful
+        
+        //here's a question, what happens between 0 and 0
+        //
+        //
+        //we should think of combination as a two-stage process, first of addition, then of a kind of settling and commingling
+        //we have two separate binary relations: firstly monoidal addition, and secondly another kind of combination
+        //
+        //
 
         [Test]
         public void Combine_NonOverlaps()
@@ -178,16 +197,41 @@ namespace Hoodie.GroupMaps.Tests
         [Test]
         public void Combine_DuplexDisjuncts4()
             => Test(@"
-                A . . C . AC C
+                A . . C . AC .
                 . B * . = .  B
             ");
         
         [Test]
         public void Combine_DuplexDisjuncts5()
             => Test(@"
-                A . . . A
-                . * B = B
+                A . . C . AC C
+                . B * . = .  B
+                A D . . . AC D
             ");
+        
+        [Test]
+        public void Combine_DuplexDisjuncts6()
+            => Test(@"
+                A B . . . AC B
+                A . * C = AC C
+            ");
+        
+        [Test]
+        public void Combine_DuplexDisjuncts7()
+            => Test(@"
+                A B . . E . AE BE E
+                A . C * . = AE .  C
+                . B D . . . .  BE D
+            ");
+        //above, both A and B are fractured by their off-set disjuncts
+        //but the identities they admit are indistinct, they group together happily into one single possible
+
+        [Test]
+        public void AggregateTest()
+        {
+            var result = new int[0].Aggregate(1, (ac, _) => ac);
+            Assert.That(result, Is.EqualTo(1));
+        }
     }
 
     public class MapTests

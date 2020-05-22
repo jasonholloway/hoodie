@@ -23,6 +23,202 @@ are conjoined
 
 we start off with one group and try to take all others we aren'tin disjunction with
 
+---------------------------------------------
+
+Empty disjuncts
+
+Can either be lazily deduced by searching for each node we're wanting to hit, for possible emptinesses
+this would require an exhaustive search however
+
+the better alternative would be to accumulate this information properly in the first place, in a nice structure 
+
+this is attached to the idea of accumulating clumps too
+
+----------------------------------------------------
+
+the findings of this morning...
+
+we need to multiply identitites too, and our choice here is between lazy recollection, which isn't efficient, and isn't as easy as it might be imagined to be either
+
+and maintaining of some structure as an accumulation of various actions - this second approach is obviously the better one, not least because it is interesting
+
+the problem is that it is a mark of absence rather than presence, and as such it will be laborious to maintain 
+
+a simple case
+
+A .
+. B
+
+both 1 and 2 here have identity as a legit option; identity is the default possiblity; except that if there is an option floating about, it might saturate the space of possibility
+
+A .
+. .
+
+is then impossible? or is it more that we don't care about the inevitable possibility of the identity on 1? if we choice this we get nothing
+
+A .
+. B
+
+but then, as soon as we have made a choice in the matter, as soon as we have chosen between A and B here, we have ruled out the possibility of identity 
+we have asserted that one value holds true at one position
+
+this is because we have chosen between the natural disjuncts of the space, the lobes before us
+
+when we start, we know on a port by port basis what disjunctions there are - actually, no, we have more structure than that already!
+groups oppose each other in a web; others are ambivalent to each other
+
+we should treat the recursively disjunct space as a tree of recursions: groups aren't free-floating, but are held in a convenient hierarchy
+at the top, is the foundational cleft; one leaf is in disjunction with another if it or any of its parents are in disjunction
+
+for there to be ambivalence, however, the structure can't be total; disjunct structures must happily sit besides each other; whittling down the one should have no effect on the other
+
+A . D
+A B .
+  B C
+
+here A^B but also A^D and B^C
+
+we can't enclose any of these disjunctions to be within another, as it is always possible for one to reach around the other
+it ceratinly isn't scalable to track each ambivalent relation; we must only care about meaningful and local relations to beat complexity
+
+above, 1 might be empty, but then each point might be empty before we commit to any particular choice...
+so it isn't saying much at all - until we make a choice, until we are committed to something
+
+so each port will know which groups hold claims on it, though at first, identity is always available
+
+how do we know when availability isn't available then? because we have pinned a value at a ceratin place
+and certain other values follow from here
+
+above, we pin (1:D), and now there is no other choice at point D; all other disjuncts have been purged from the graph; this is the power of making a choice
+that's how it goes: purging from port disjuncts
+
+practically, each index returns identity as a default, unless something positive has been assigned to it (or rather, if it has been purged)
+
+----
+
+which is all fine, except that now we have to bounce things too - is the structure of the map only discoverable by dusting it off each time?
+
+. A .   C
+. A B * .
+. . B   C
+
+for each node of C, we want to find clumped hits
+we find A and B; we find them, we clump them into their disjuncts
+but on the first hit, we should find identity there
+
+it's not that we should be working out where identity is - we should be tracking where it isn't
+when we have a clump selected, then we know that there is no identity in play; but we have to take it that it's everywhere else available
+
+but how do we know that a clump isn't total?
+
+--------------------------------------------
+
+we have our RH 
+which will hit the left, and find there clumps
+
+a clump is a group of groups that are not internally disjunct
+as well as groups of nodes however, there should also be a spread of identities
+
+although in some cases there won't be identities in play; it would seem there should be identities everywhere except for where the clumped groups themselvese are
+
+------------------------------------------
+
+CLUMPS ARE NOT JUST LOCAL
+they can be maintained across the map
+
+and they themselves can be indexed per port
+that is - a double indexing, of ports and of clumps
+
+if we had port indexes of clumps at hand, then we would know what we needed to project into
+which the special case again if no clumps are found at all
+
+but we currently find all clumps now albeit lazily
+so how would we do it now...
+
+----
+
+all the groups that we hit, aren't just related to each other, but also possibly to others that we don't consider hits
+but these others do fracture them, and may create spaces we need to project into
+
+but we're saying across a graph, disjuncts will cover everything: it's not really the disjunct itself, it's its problematising power
+it just takes the smallest suspicion of doubt to create the space for another projection
+
+if there is no intersection, then there is an implicit identity to merge with
+
+if there is only one intersecting group, then we must combine with that
+
+if there is any kind of disjunction in play, then we must merge across this disjunction
+we don't have to merge across all disjunctions, only those that affect us
+
+clumps of course aren't just enumerable, but exist themselves in a graph of disjunctions, exactly like the groups they clump
+
+we want to merge but one in; we know all the lhs groups we intersect with; and at this point, we should be able to get a clump that's limited in some way
+to the groups that will affect us
+
+it isn't just the group itself and its coverage, but its status, its level of reality; some groups are doubtful, even if we don't know why with our blinkers so narrowed to the merge site
+
+-----
+
+so I'm suggesting a kind of pre-digestion, a pre-clumping that is sensitive to the basis of these groups
+
+this preclumping can be tested, using some kind of notation again
+this notation would involve groups of groups and their disjunctions
+
+---
+
+clumps float freely until we, with our would-be mergable, now tangle them across a certain space; the graph by itself doesn't care less
+and so we seek to form them into one tangled clump; disparate groups form the clump, but their form is exactly the same as the wider graph:
+some small groups will sit next to each other not interfering, while others will be diametrically opposed to each other
+
+[Test]
+public void Combine_DuplexDisjuncts4()
+	=> Test(@"
+			A . . C . AC C
+			. B * . = .  B
+	");
+	
+here the C only finds the A as an immediate hit; but once found, the A should clearly state that it exists only in disjunction; and the C knows that the other disjunct is of no interest to it,
+as B does not appear in the clump itself; it knows then that there is a disjunct to project into that is effectively empty for it
+
+A . . D   DAB . 
+. B * D = DAB .
+A C . .   DAB C
+
+-------
+
+in curtailing our clumps, what we do isn't to just ignore a disjunct that doesn't hit, but we anull it, by treating it as emptybut present
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

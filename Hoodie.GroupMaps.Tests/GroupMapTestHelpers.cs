@@ -54,11 +54,11 @@ namespace Hoodie.GroupMaps.Tests
                 .SelectMany(slice => slice switch 
                 {
                     _ when slice.Any(g => g.Value == '*')
-                    => new object[] { "*" },
+                        => new object[] { "*" },
                     _ when slice.Any(g => g.Value == '=')
-                    => new object[] { "=" },
+                        => new object[] { "=" },
                     _ 
-                    => (IEnumerable<object>)slice
+                        => (IEnumerable<object>)slice
                 });
 
             var tokens = new Queue<object>(slices);

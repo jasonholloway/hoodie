@@ -87,10 +87,9 @@ namespace Hoodie.GroupMaps
                         var (_left, _right) = tup;
                         
                         var _hits = toAdd.Nodes
-                            .SelectMany(n => left.LookupIndexed(n))
-                            .Select(i => left._groups[i])
+                            .SelectMany(n => left[n])
                             .ToImmutableHashSet();
-
+                        
                         if (_hits.IsEmpty)
                         {
                             return (
@@ -100,6 +99,9 @@ namespace Hoodie.GroupMaps
                         }
                         else
                         {
+                            //but some of these hits will be partial - ie undermined by other disjuncts out of view
+                            //
+                            
                             return ClumpHits(_hits)
                                 .Aggregate(
                                     (_left, _right),
@@ -122,6 +124,13 @@ namespace Hoodie.GroupMaps
                     });
                 
                 return Bounce(left, right, mV);
+                
+                //so, we want an empty group to be emitted if any of the hit groups is fractured
+                //and what is a fractured group? one that is in disjunction
+                
+                //if there are no hits, then we should be returning an empty group surely
+                //yes - no hits: empty group returned please
+                //similarly, fractured group: empty group as disjunct
                 
                 IEnumerable<ImmutableHashSet<Group<N, V>>> ClumpHits(ImmutableHashSet<Group<N, V>> _hits)
                 {
