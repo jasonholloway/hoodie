@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -218,6 +217,13 @@ namespace Hoodie.GroupMaps.Tests
         
         [Test]
         public void Combine_DuplexDisjuncts7()
+            => Test(@"
+                A B . . . AC BC
+                A B * C = AC BC
+            ");
+        
+        [Test]
+        public void Combine_DuplexDisjuncts8()
             => Test(@"
                 A B . . E . AE BE E
                 A . C * . = AE .  C

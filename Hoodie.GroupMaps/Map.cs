@@ -65,6 +65,13 @@ namespace Hoodie.GroupMaps
 
         delegate T Op<T>(T inp);
 
+        public ISet<Map<N, V>> Hit(ISet<N> nodes)
+        {
+            throw new NotImplementedException();
+        }
+        
+        
+
         private static Map<N, V> Bounce(Map<N, V> left, Map<N, V> right, IMonoid<V> mV)
         {
             if (right._groups.IsEmpty) return left;
@@ -89,76 +96,78 @@ namespace Hoodie.GroupMaps
                         var _hits = toAdd.Nodes
                             .SelectMany(n => left[n])
                             .ToImmutableHashSet();
-                        
-                        if (_hits.IsEmpty)
-                        {
-                            return (
-                                _left.Add(toAdd.Nodes, toAdd.Value), 
-                                _right
-                                );
-                        }
-                        else
-                        {
-                            //but some of these hits will be partial - ie undermined by other disjuncts out of view
-                            //
+
+                        var clumps = ClumpHits(_hits);
                             
-                            return ClumpHits(_hits)
-                                .Aggregate(
-                                    (_left, _right),
-                                    (_tup, clump) =>
-                                    {
-                                        var (__left, __right) = _tup;
-                                        return (
-                                            clump
-                                                .Aggregate(__left, (ll, g) => ll.RemoveGroup(g.Gid))
-                                                .Add(
-                                                    toAdd.Nodes
-                                                        .Concat(clump.SelectMany(g => g.Nodes))
-                                                        .ToImmutableHashSet(),
-                                                    clump.Aggregate(toAdd.Value, (v, g) => mV.Combine(v, g.Value))
-                                                ),
-                                            __right
-                                            );
-                                    }); 
-                        }
+                        return clumps.Aggregate(
+                            (_left, _right),
+                            (_tup, clump) =>
+                            {
+                                var (__left, __right) = _tup;
+                                return (
+                                    clump
+                                        .Aggregate(__left, (ll, g) => ll.RemoveGroup(g.Gid))
+                                        .Add(
+                                            toAdd.Nodes
+                                                .Concat(clump.SelectMany(g => g.Nodes))
+                                                .ToImmutableHashSet(),
+                                            clump.Aggregate(toAdd.Value, (v, g) => mV.Combine(v, g.Value))
+                                        ),
+                                    __right
+                                );
+                            });
                     });
                 
                 return Bounce(left, right, mV);
-                
-                //so, we want an empty group to be emitted if any of the hit groups is fractured
-                //and what is a fractured group? one that is in disjunction
-                
-                //if there are no hits, then we should be returning an empty group surely
-                //yes - no hits: empty group returned please
-                //similarly, fractured group: empty group as disjunct
                 
                 IEnumerable<ImmutableHashSet<Group<N, V>>> ClumpHits(ImmutableHashSet<Group<N, V>> _hits)
                 {
                     switch (_hits.Count)
                     {
-                        case 0: return Enumerable.Empty<ImmutableHashSet<Group<N, V>>>();
+                        case 0: 
                         case 1: return new[] { _hits };
                         default:
                         {
                             var head = _hits.First();
                             var tail = _hits.Remove(head);
 
-                            var clumps = ClumpHits(tail
-                                    .Where(g => !g.Disjuncts.Contains(head.Gid))
-                                    .ToImmutableHashSet())
+                            //we're in the business of gathering others into our clump here, aren't we?
+                            //so below, we find tail groups that can sit happily alongside us
+                            //it'd be nice if each group were actually problematised here
+                            //ie we've got our hit groups; we should now mask these to remove extraneous disjuncts (replacing each with empty group)
+                            //now we need to sort them so that we ahve enumerable clumps to project across
+                            
+                            var tailIndies = tail
+                                .Where(g => !g.Disjuncts.Contains(head.Gid))
+                                .ToImmutableHashSet();
+
+                            if (tailIndies.IsEmpty)
+                            {
+                                //what are we supposed to be doing here then?
+                                //tailIndies should be part of same clump
+                                //except for fact that they might not be independent of each other
+                                //
+                            }
+                            else
+                            {
+                                //tailIndies themselves should be clumped?
+                                //tailIndies should live in same clump as head!
+                            }
+                            
+                            var tailClumps = ClumpHits(tailIndies)
                                 .Select(set => set.Add(head))
                                 .ToImmutableHashSet();
 
-                            if (clumps.IsEmpty)
+                            if (tailClumps.IsEmpty)
                             {
-                                clumps = new[] { new[] { head }.ToImmutableHashSet() }.ToImmutableHashSet();
+                                tailClumps = new[] { new[] { head }.ToImmutableHashSet() }.ToImmutableHashSet();
                             }
 
-                            var tail2 = clumps
+                            var tail2 = tailClumps
                                 .SelectMany(set => set)
                                 .Aggregate(tail, (ac, g) => ac.Remove(g));
 
-                            return clumps
+                            return tailClumps
                                 .Concat(ClumpHits(tail2));
                         }
                     }

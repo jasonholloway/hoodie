@@ -188,6 +188,25 @@ A C . .   DAB C
 
 in curtailing our clumps, what we do isn't to just ignore a disjunct that doesn't hit, but we anull it, by treating it as emptybut present
 
+so we'd firstly curtail, by replacing all disjunctions we don't care about with the empty group;
+
+-----------------------------
+
+how do we clump together hit groups?
+
+all hit groups stand to be combined with our input group
+the question is how many projections we need to make into how many spaces
+
+A . C _  _ _ _ _ _
+. B . # . ^ . ^ B
+A B . # A _ . _ B
+
+ie 3 clumps 
+
+so, let's parse that
+
+
+
 
 
 

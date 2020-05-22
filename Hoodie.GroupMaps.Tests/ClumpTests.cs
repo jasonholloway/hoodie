@@ -1,32 +1,39 @@
-using System.Collections.Immutable;
 using NUnit.Framework;
+using static Hoodie.GroupMaps.Tests.MapLang;
 
 namespace Hoodie.GroupMaps.Tests
 {
-
-    public class Clumpable
-    {
-        public ImmutableHashSet<Clumpable> Disjuncts { get; }
-    }
-    
     public class ClumpTests
     {
         [Test]
+        public void MapEquality1()
+            => Test(@"
+                    A | A
+                    A = A
+                ");
+
+        [Test]
+        public void MapEquality2()
+            => Test(@"
+                    A . | . A
+                    A B = B A
+                ");
+
+        [Test]
+        public void MapEquality3()
+            => Test(@"
+                    A . | . A
+                    A B = B A
+                    C . | C .
+                ");
+
+        [Test]
         public void Blah()
             => Test(@"
-                A . D .
-                A B . .
-                . B C % 
-                A^D, A^B, B^C
+                    A . C  |   _ _ _ _ _
+                    . B .  =>  . ^ . ^ B
+                    A B .  =>  A | . | B
                 ");
-        
-        //the above should give us a clump
 
-
-        static void Test(string blah)
-        {
-            
-        }
-        
     }
 }
