@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using NUnit.Framework;
-using static Hoodie.GroupMaps.Tests.GroupMapTestHelpers;
+using static Hoodie.GroupMaps.Tests.Helpers;
+using static Hoodie.GroupMaps.Tests.MapLang;
 
 namespace Hoodie.GroupMaps.Tests
 {
@@ -92,14 +93,14 @@ namespace Hoodie.GroupMaps.Tests
 
         [Test]
         public void Combine_Empties()
-            => Test(@"
+            => Run(@"
                 . . . . .
                 . * A = A
             ");
         
         [Test]
         public void Combine_Overlaps()
-            => Test(@"
+            => Run(@"
                 A . . . AB
                 A * B = AB
                 . . B . AB
@@ -119,7 +120,7 @@ namespace Hoodie.GroupMaps.Tests
 
         [Test]
         public void Combine_NonOverlaps()
-            => Test(@"
+            => Run(@"
                 A . . . A
                 A * . = A
                 . . B . B
@@ -127,7 +128,7 @@ namespace Hoodie.GroupMaps.Tests
 
         [Test]
         public void Combine_Disjuncts()
-            => Test(@"
+            => Run(@"
                 A B . C . AC BC
                 A . * . = AC .
                 . B . C . AC BC
@@ -135,7 +136,7 @@ namespace Hoodie.GroupMaps.Tests
 
         [Test]
         public void Combine_ComplexDisjuncts1()
-            => Test(@"
+            => Run(@"
                 A . . D . ACD .
                 A B * . = ACD B
                 . B . . . .   B
@@ -144,7 +145,7 @@ namespace Hoodie.GroupMaps.Tests
         
         [Test]
         public void Combine_ComplexDisjuncts2()
-            => Test(@"
+            => Run(@"
                 A . . . D . ACD BD
                 A B . * . = ACD BD
                 . B . . . . .   BD 
@@ -153,7 +154,7 @@ namespace Hoodie.GroupMaps.Tests
         
         [Test]
         public void Combine_ComplexDisjuncts3()
-            => Test(@"
+            => Run(@"
                 A . . . D . ABD ACD 
                 . B . * . = ABD .
                 . B C . D . ABD ACD
@@ -161,19 +162,19 @@ namespace Hoodie.GroupMaps.Tests
 
         [Test]
         public void Combine_RhsOnly1()
-            => Test(@"
+            => Run(@"
                 . * A = A
             ");
         
         [Test]
         public void Combine_RhsOnly2()
-            => Test(@"
+            => Run(@"
                 . * A B = A B
             ");
         
         [Test]
         public void Combine_DuplexDisjuncts1()
-            => Test(@"
+            => Run(@"
                 . . . C . .  AC 
                 A * B C = AB AC
                 A . . . . AB AC
@@ -181,7 +182,7 @@ namespace Hoodie.GroupMaps.Tests
         
         [Test]
         public void Combine_DuplexDisjuncts2()
-            => Test(@"
+            => Run(@"
                 A . . . D . A AD .  BD 
                 . B * C D = C AD BC BD
                 A B . . . . A AD BC BD
@@ -189,20 +190,20 @@ namespace Hoodie.GroupMaps.Tests
         
         [Test]
         public void Combine_DuplexDisjuncts3()
-            => Test(@"
+            => Run(@"
                 A B * C D = AC AD BC BD
             ");
         
         [Test]
         public void Combine_DuplexDisjuncts4()
-            => Test(@"
+            => Run(@"
                 A . . C . AC .
                 . B * . = .  B
             ");
         
         [Test]
         public void Combine_DuplexDisjuncts5()
-            => Test(@"
+            => Run(@"
                 A . . C . AC C
                 . B * . = .  B
                 A D . . . AC D
@@ -210,21 +211,21 @@ namespace Hoodie.GroupMaps.Tests
         
         [Test]
         public void Combine_DuplexDisjuncts6()
-            => Test(@"
+            => Run(@"
                 A B . . . AC B
                 A . * C = AC C
             ");
         
         [Test]
         public void Combine_DuplexDisjuncts7()
-            => Test(@"
+            => Run(@"
                 A B . . . AC BC
                 A B * C = AC BC
             ");
         
         [Test]
         public void Combine_DuplexDisjuncts8()
-            => Test(@"
+            => Run(@"
                 A B . . E . AE BE E
                 A . C * . = AE .  C
                 . B D . . . .  BE D
@@ -320,31 +321,30 @@ namespace Hoodie.GroupMaps.Tests
 
         [Test]
         public void SimpleEquality()
-            => Test(@"
+            => Run(@"
                  A . A
                  A = A
              ");
 
         [Test]
         public void Equality_OfDisjuncts()
-            => Test(@"
+            => Run(@"
                  A B . B A
                  A B = B A
              ");
 
         [Test]
         public void Equality_OfDisjuncts2()
-            => Test(@"
-                 A . . A
-                 . B = B
+            => Run(@"
+                 A . . A .
+                 . B = B .
                  C D . C D
              ");
 
-
         [Test]
-        public void BuildAMap()
+        public void BuildsMap()
         {
-            var map = BuildMap(@"
+            var map = Run<Map<int, Sym>>(@"
                 A B
                 A .
                 . B

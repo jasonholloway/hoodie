@@ -7,21 +7,21 @@ namespace Hoodie.GroupMaps.Tests
     {
         [Test]
         public void MapEquality1()
-            => Test(@"
+            => Run(@"
                     A | A
                     A = A
                 ");
 
         [Test]
         public void MapEquality2()
-            => Test(@"
+            => Run(@"
                     A . | . A
                     A B = B A
                 ");
 
         [Test]
         public void MapEquality3()
-            => Test(@"
+            => Run(@"
                     A . | . A
                     A B = B A
                     C . | C .
@@ -29,7 +29,7 @@ namespace Hoodie.GroupMaps.Tests
 
         [Test]
         public void Blah()
-            => Test(@"
+            => Run(@"
                     A . C  |   _ _ _ _ _
                     . B .  =>  . ^ . ^ B
                     A B .  =>  A | . | B

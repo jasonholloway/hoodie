@@ -9,25 +9,61 @@ namespace Hoodie.GroupMaps.Tests
 {
     public static class MapLang
     {
-        public static void Test(string code)
+        public static T Run<T>(string code)
+            => (T)Run(code);
+        
+        public static object Run(string code)
         {
             var slices = ParseSlices(code);
             var x = new Context(slices);
 
-            while (ReadEquals() 
-                   || ReadHit());
+            while (!x.AtEnd) Read();
 
-            return;
+            if (x.TryPop(out object result))
+                return result;
+            else
+                return null;
+
+            bool Read()
+                => ReadMap()
+                   || ReadClumps()
+                   || ReadCombination()
+                   || ReadHitEquals()
+                   || ReadEquals()
+                   || Throw("Can't read input!");
+            
+            bool Throw(string message)
+                => throw new Exception(message);
+            
+            bool ReadCombination()
+            {
+                x.Save();
+                
+                if(x.TryPop(out Map<int, Sym> left)
+                    && x.ReadSymbol("*")
+                    && Read()
+                    && x.TryPop(out Map<int, Sym> right))
+                {
+                    var map = left.Combine(right);
+                    x.Push(map);
+                    return true;
+                }
+
+                x.Reset();
+                return false;
+            }
 
             bool ReadEquals()
             {
                 x.Save();
 
-                if (ReadMap(out var left)
+                if (
+                    x.TryPop(out Map<int, Sym> left)
                     && x.ReadSymbol("=")
-                    && ReadMap(out var right))
+                    && Read()
+                    && x.TryPop(out Map<int, Sym> right))
                 {
-                    Assert.That(right, Is.EqualTo(left).Using(MapComp));
+                    Assert.That(left, Is.EqualTo(right).Using(MapComp));
                     return true;
                 }
 
@@ -35,13 +71,14 @@ namespace Hoodie.GroupMaps.Tests
                 return false;
             }
             
-            bool ReadHit()
+            bool ReadHitEquals()
             {
                 x.Save();
                 
-                if (ReadMap(out var map)
+                if(x.TryPop(out Map<int, Sym> map)
                    && ReadHitOp(out var nodes)
-                   && ReadClumps(out var expected))
+                   && Read()
+                   && x.TryPop(out ISet<Map<int, Sym>> expected))
                 {
                     var result = map.Hit(nodes);
                     Assert.That(result, Is.EqualTo(expected));
@@ -54,24 +91,31 @@ namespace Hoodie.GroupMaps.Tests
 
             bool ReadHitOp(out ISet<int> nodes)
                 => x.ReadPosSymbol("=>", out nodes);
-            
 
-            bool ReadMap(out Map<int, Sym> map)
+
+            bool ReadMap()
             {
-                map = Map<int, Sym>.Empty;
-                
-                while (ReadGroup(out var found))
+                if (ReadGroups(out var groups))
                 {
-                    foreach (var g in found)
+                    var map = x.TryPop<Map<int, Sym>>(out var m) 
+                        ? m : Map<int, Sym>.Empty;
+                    
+                    foreach (var g in groups)
                     {
                         map = map.Add(GroupMap.Lift(g.Nodes, g.Value));
                     }
+                    
+                    x.Push(map);
+
+                    ReadMap();
+                    
+                    return true;
                 }
 
-                return true;
+                return false;
             }
 
-            bool ReadGroup(out SimpleGroup<int, Sym>[] found)
+            bool ReadGroups(out SimpleGroup<int, Sym>[] found)
             {
                 if (x.TryRead(matchAll: @"^\w*$", out var slice))
                 {
@@ -84,33 +128,48 @@ namespace Hoodie.GroupMaps.Tests
                     
                     return true;
                 }
-                
+
                 found = null;
                 return false;
             }
             
-            
-            bool ReadClumps(out ISet<Map<int, Sym>> clumps)
+            bool ReadClumps()
             {
-                var found = new Queue<Map<int, Sym>>();
-                
-                do
-                {
-                    if (!ReadMap(out var clump)) break;
-                    else
-                    {
-                        found.Enqueue(clump);
-                    }
-                } while (x.ReadSymbol("^"));
+                x.Save();
 
-                clumps = found.ToHashSet();
-                return true;
+                ISet<Map<int, Sym>> acc;
+
+                if (x.TryPop(out Map<int, Sym> left))
+                {
+                    acc = new[] {left}.ToHashSet();
+                }
+                else if (x.TryPop(out ISet<Map<int, Sym>> _acc))
+                {
+                    acc = _acc;
+                }
+                else
+                {
+                    x.Reset();
+                    return false;
+                }
+                
+                if(x.ReadSymbol("^")
+                    && ReadMap()
+                    && x.TryPop(out Map<int, Sym> right))
+                {
+                    acc.Add(right);
+                    x.Push(right);
+                    return true;
+                }
+                
+                x.Reset();
+                return false;
             }
 
             IEnumerable<string[]> ParseSlices(string _input)
             {
                 var matches = Regex
-                    .Matches(_input, @"^(?: +([\w\.\|_\#\^\<\>\=]+))+", RegexOptions.Multiline);
+                    .Matches(_input, @"^(?: +([\w\.\|_\#\^\<\>\=\*]+))+", RegexOptions.Multiline);
 
                 return new Queue<string[]>(matches
                     .SelectMany((m, y) => m.Groups[1].Captures.Select((c, x) => (x, y, c.Value)))
@@ -123,26 +182,49 @@ namespace Hoodie.GroupMaps.Tests
 
         class Context
         {
-            Stack<ImmutableList<string[]>> _saved;
+            Stack<(ImmutableList<string[]>, ImmutableStack<object>)> _saved;
+            
             ImmutableList<string[]> _slices;
+            ImmutableStack<object> _stack;
 
             public Context(IEnumerable<string[]> slices)
             {
-                _saved = new Stack<ImmutableList<string[]>>();
+                _saved = new Stack<(ImmutableList<string[]>, ImmutableStack<object>)>();
                 _slices = ImmutableList.CreateRange(slices);
+                _stack = ImmutableStack<object>.Empty;
             }
 
+            public bool AtEnd => _slices.IsEmpty;
+            
             public void Save()
             {
-                _saved.Push(_slices);
+                _saved.Push((_slices, _stack));
             }
 
             public void Reset()
             {
-                _slices = _saved.Pop();
+                (_slices, _stack) = _saved.Pop();
             }
 
-            public bool TryPeek(out string[] slice)
+            public void Push(object obj)
+            {
+                _stack = _stack.Push(obj);
+            }
+
+            public bool TryPop<T>(out T val)
+            {
+                if (!_stack.IsEmpty && _stack.Peek() is T)
+                {
+                    val = (T)_stack.Peek();
+                    _stack = _stack.Pop();
+                    return true;
+                }
+
+                val = default;
+                return false;
+            }
+
+            public bool TryRead(out string[] slice)
             {
                 if (!_slices.IsEmpty)
                 {
@@ -155,11 +237,11 @@ namespace Hoodie.GroupMaps.Tests
             }
 
             public bool TryRead(string matchAll, out string[] slice)
-                => TryPeek(out slice)
+                => TryRead(out slice)
                    && slice.All(r => Regex.IsMatch(r, matchAll))
-                   && Read();
+                   && Move();
 
-            public bool Read()
+            public bool Move()
             {
                 if (!_slices.IsEmpty)
                 {
@@ -171,16 +253,16 @@ namespace Hoodie.GroupMaps.Tests
             }
 
             public bool TryReadSymbol(string symbol)
-                => TryPeek(out var slice)
+                => TryRead(out var slice)
                    && slice.Where(r => r != "").Any(r => r == symbol);
             
             public bool ReadSymbol(string symbol)
                 => TryReadSymbol(symbol)
-                   && Read();
+                   && Move();
 
             public bool ReadPosSymbol(string symbol, out ISet<int> nodes)
             {
-                if (TryReadSymbol(symbol) && TryPeek(out var slice))
+                if (TryReadSymbol(symbol) && TryRead(out var slice))
                 {
                     nodes = slice
                         .Select((v, y) => (y: y + 1, v))
