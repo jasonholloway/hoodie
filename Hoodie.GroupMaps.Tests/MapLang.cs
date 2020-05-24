@@ -17,7 +17,7 @@ namespace Hoodie.GroupMaps.Tests
             var slices = ParseSlices(code);
             var x = new Context(slices);
 
-            while (!x.AtEnd) Read();
+            Read();
 
             if (x.TryPop(out object result))
                 return result;
@@ -25,12 +25,29 @@ namespace Hoodie.GroupMaps.Tests
                 return null;
 
             bool Read()
-                => ReadMap()
-                   || ReadClumps()
-                   || ReadCombination()
-                   || ReadHitEquals()
-                   || ReadEquals()
-                   || Throw("Can't read input!");
+            {
+                if (ReadMap())
+                {
+                    ReadForwards();
+                    return true;
+                }
+
+                return false;
+            }
+
+            bool ReadForwards()
+            {
+                if (ReadClumps()
+                    || ReadCombination()
+                    || ReadHitEquals()
+                    || ReadEquals())
+                {
+                    ReadForwards();
+                    return true;
+                }
+
+                return false;
+            }
             
             bool Throw(string message)
                 => throw new Exception(message);
@@ -154,11 +171,18 @@ namespace Hoodie.GroupMaps.Tests
                 }
                 
                 if(x.ReadSymbol("^")
-                    && ReadMap()
-                    && x.TryPop(out Map<int, Sym> right))
+                    && Read()
+                    && (x.TryPop(out object right)))
                 {
-                    acc.Add(right);
-                    x.Push(right);
+                    if (right is Map<int, Sym> m) acc.Add(m);
+                    else if (right is ISet<Map<int, Sym>> s) acc.UnionWith(s);
+                    else
+                    {
+                        x.Reset();
+                        return false;
+                    }
+                    
+                    x.Push(acc);
                     return true;
                 }
                 
@@ -270,7 +294,7 @@ namespace Hoodie.GroupMaps.Tests
                         .Select(t => t.y)
                         .ToHashSet();
 
-                    return true;
+                    return Move();
                 }
 
                 nodes = null;
