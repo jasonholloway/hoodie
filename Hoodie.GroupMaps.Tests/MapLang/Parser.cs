@@ -64,10 +64,10 @@ namespace Hoodie.GroupMaps.Tests.MapLang
             {
                 x.Save();
                 
-                if(x.TryPop(out GridNode left)
+                if(x.TryPop(out Node left)
                     && x.ReadSymbol("*")
                     && Read()
-                    && x.TryPop(out GridNode right))
+                    && x.TryPop(out Node right))
                 {
                     x.Push(new CombinationNode(left, right));
                     return true;
@@ -81,11 +81,10 @@ namespace Hoodie.GroupMaps.Tests.MapLang
             {
                 x.Save();
 
-                if (
-                    x.TryPop(out GridNode left)
+                if (x.TryPop(out Node left)
                     && x.ReadSymbol("=")
                     && Read()
-                    && x.TryPop(out GridNode right))
+                    && x.TryPop(out Node right))
                 {
                     x.Push(new EqualsNode(left, right));
                     return true;
@@ -99,10 +98,10 @@ namespace Hoodie.GroupMaps.Tests.MapLang
             {
                 x.Save();
                 
-                if(x.TryPop(out GridNode map)
-                   && ReadHitOp(out var nodes)
+                if(x.TryPop(out Node map)
+                   && x.ReadPosSymbol("=>", out var nodes)
                    && Read()
-                   && x.TryPop(out DisjunctionNode expected))
+                   && x.TryPop(out Node expected))
                 {
                     x.Push(new HitNode(map, nodes, expected));
                     return true;
@@ -112,14 +111,11 @@ namespace Hoodie.GroupMaps.Tests.MapLang
                 return false;
             }
 
-            bool ReadHitOp(out ISet<int> nodes)
-                => x.ReadPosSymbol("=>", out nodes);
-
             bool ReadDisjunction()
             {
                 x.Save();
 
-                if(x.TryPop(out GridNode left) 
+                if(x.TryPop(out Node left) 
                     && x.ReadSymbol("^")
                     && Read()
                     && x.TryPop(out Node right))

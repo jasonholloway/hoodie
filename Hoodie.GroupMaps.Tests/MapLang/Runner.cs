@@ -48,18 +48,9 @@ namespace Hoodie.GroupMaps.Tests.MapLang
         }
 
         static object _Read(DisjunctionNode node)
-        {
-            var set = ImmutableHashSet<Map<int, Sym>>.Empty;
-            set = set.Add(Read(node.Left).As<Map<int, Sym>>());
-
-            var right = Read(node.Right);
-            return right switch
-            {
-                Map<int, Sym> map => set.Add(map),
-                ISet<Map<int, Sym>> set2 => set.Union(set2),
-                _ => throw new Exception($"Strange value read: {right}"),
-            };
-        }
+            => ImmutableHashSet<Map<int, Sym>>.Empty
+                .Add(Read(node.Left).As<Map<int, Sym>>())
+                .Union(Read(node.Right).AsSet<Map<int, Sym>>());
 
         static object _Read(CombinationNode node)
         {
@@ -72,7 +63,7 @@ namespace Hoodie.GroupMaps.Tests.MapLang
         static object _Read(HitNode node)
         {
             var left = Read(node.Left).As<Map<int, Sym>>();
-            var right = Read(node.Right).As<ISet<Map<int, Sym>>>();
+            var right = Read(node.Right).AsSet<Map<int, Sym>>();
             
             return new Action(() =>
             {
