@@ -41,6 +41,12 @@ namespace Hoodie.GroupMaps.Tests.MapLang
         public EqualsNode(Node left, Node right) : base(left, right)
         { }
     }
+    
+    public class InequalsNode : BinaryNode<Node, Node>
+    {
+        public InequalsNode(Node left, Node right) : base(left, right)
+        { }
+    }
 
     public class DisjunctionNode : BinaryNode<Node, Node>
     {

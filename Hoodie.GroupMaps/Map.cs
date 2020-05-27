@@ -15,7 +15,8 @@ namespace Hoodie.GroupMaps
     {
         readonly int _gid = 0;
         readonly ImmutableSortedDictionary<int, Group<N, V>> _groups;
-        readonly ImmutableDictionary<N, ImmutableHashSet<int>> _index;
+        readonly ImmutableSortedDictionary<N, ImmutableHashSet<int>> _index;
+        readonly int _hash;
 
         public IEnumerable<Group<N, V>> Groups
             => _groups.Values;
@@ -26,12 +27,13 @@ namespace Hoodie.GroupMaps
         private Map(
             int gid = 0,    
             ImmutableSortedDictionary<int, Group<N, V>> groups = null,
-            ImmutableDictionary<N, ImmutableHashSet<int>> index = null
+            ImmutableSortedDictionary<N, ImmutableHashSet<int>> index = null
             )
         {
             _gid = gid;
             _groups = groups ?? ImmutableSortedDictionary<int, Group<N, V>>.Empty;
-            _index = index ?? ImmutableDictionary<N, ImmutableHashSet<int>>.Empty;
+            _index = index ?? ImmutableSortedDictionary<N, ImmutableHashSet<int>>.Empty;
+            _hash = _groups.Aggregate(17, (ac, g) => (ac + g.GetHashCode() * 3) + 5);
         }
         
         public static readonly Map<N, V> Empty = new Map<N, V>();
@@ -45,7 +47,7 @@ namespace Hoodie.GroupMaps
                     .Empty
                     .Add(0, group),
                 nodes.Aggregate(
-                    ImmutableDictionary<N, ImmutableHashSet<int>>
+                    ImmutableSortedDictionary<N, ImmutableHashSet<int>>
                         .Empty,
                     (index, n) => index
                         .Add(n, ImmutableHashSet<int>.Empty.Add(0))
@@ -56,20 +58,26 @@ namespace Hoodie.GroupMaps
         public Map<N, V> Combine(Map<N, V> other, IMonoid<V> mV) 
             => Bounce(this, other, mV);
         
-        //as we start bouncing, disjuncts should be separately projected
-        //our creations, by being added separately, will be as disjuncts as the sources therefore
-        
-        //this requires the right hand groups themselves to be clumped
-        //
-        //
 
-        delegate T Op<T>(T inp);
 
-        public ISet<Map<N, V>> Hit(ISet<N> nodes)
+        public Disjunction<N, V> Hit(ISet<N> nodes)
         {
-            throw new NotImplementedException();
+            var hits = nodes
+                .SelectMany(n => this[n])
+                .ToImmutableHashSet();
+            
+            //we've got all our possible groups here, it's just a case of splitting them between disjuncts
+            //we have to make sure that each group sits next to others it has no issues with
+            //it's a sorting basically: we need to separate out the groups into buckets
+            //the problem is 
+            
+
+            var map2 = hits.Aggregate(
+                Empty,
+                (m, g) => m.Add(g.Nodes, g.Value));
+
+            return Disjunction.From(new[] {map2});
         }
-        
         
 
         private static Map<N, V> Bounce(Map<N, V> left, Map<N, V> right, IMonoid<V> mV)
@@ -249,12 +257,16 @@ namespace Hoodie.GroupMaps
                 : Enumerable.Empty<Group<N, V>>();
 
         public override string ToString()
-            => $"<{string.Join(",", _groups.Select(g => g.Value))}>";
+            => $"{{{string.Join(", ", _groups.Select(g => g.Value))}}}";
 
         #region Equality
-        
+
         public bool Equals(Map<N, V> other)
-            => other?._groups.Values.ToImmutableHashSet().SetEquals(_groups.Values) ?? false;
+        {
+            var leftGroups = _groups.Values.OrderBy(g => g.GetHashCode());
+            var rightGroups = other?._groups.Values.OrderBy(g => g.GetHashCode());
+            return rightGroups?.SequenceEqual(leftGroups) ?? false;
+        }
 
         public override bool Equals(object obj)
         {
@@ -265,8 +277,8 @@ namespace Hoodie.GroupMaps
         }
 
         public override int GetHashCode()
-            => _groups.GetHashCode() + 1;
-        
+            => _hash;
+
         #endregion
     }
 }

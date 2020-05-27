@@ -289,7 +289,8 @@ namespace Hoodie.GroupMaps.Tests
             var m3 = m2
                 .Remove(m2[3].First());
 
-            Assert.That(m3, Is.EqualTo(m1).Using(MapComp));
+            Assert.That(m3, Is.EqualTo(m1)
+                .Using(MapEqualityComparer.Instance));
         }
 
         [Test]
@@ -327,24 +328,72 @@ namespace Hoodie.GroupMaps.Tests
              ");
 
         [Test]
-        public void Equality_OfDisjuncts()
+        public void Equality_OfDisjuncts1()
             => Test(@"
                  A B . B A
                  A B = B A
              ");
-
+        
         [Test]
         public void Equality_OfDisjuncts2()
+            => Test(@"
+                 A . . A
+                 . B = B
+             ");
+
+        [Test]
+        public void Equality_OfDisjuncts3()
             => Test(@"
                  A . . A .
                  . B = B .
                  C D . C D
              ");
+        
+        [Test]
+        public void Inequality_Simple1()
+            => Test(@"
+                 A != B
+             ");
+        
+        [Test]
+        public void Inequality_Simple2()
+            => Test(@"
+                 A != .
+             ");
+        
+        [Test]
+        public void Inequality_Simple3()
+            => Test(@"
+                 A != .
+                 . |  A
+             ");
+        
+        [Test]
+        public void Inequality_Simple4()
+            => Test(@"
+                 A . != A B
+                 . B |  . B
+             ");
+
+        [Test]
+        public void Disjuncts_Created()
+        {
+            var map = BuildMap("A B");
+
+            Assert.Multiple(() =>
+            {
+                var group1 = map.Groups.ElementAt(0);
+                Assert.That(group1.Disjuncts, Has.Count.EqualTo(1));
+
+                var group2 = map.Groups.ElementAt(1);
+                Assert.That(group2.Disjuncts, Has.Count.EqualTo(1));
+            });
+        }
 
         [Test]
         public void BuildsMap()
         {
-            var map = Run<Map<int, Sym>>(@"
+            var map = BuildMap(@"
                 A B
                 A .
                 . B
@@ -369,6 +418,9 @@ namespace Hoodie.GroupMaps.Tests
                 }));
             });
         }
+
+        Map<int, Sym> BuildMap(string code)
+            => Run<Map<int, Sym>>(code);
     }
 
     public static class TestExtensions

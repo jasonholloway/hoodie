@@ -31,7 +31,8 @@ namespace Hoodie.GroupMaps.Tests.MapLang
                 if (ReadDisjunction()
                     || ReadCombination()
                     || ReadHitEquals()
-                    || ReadEquals())
+                    || ReadInequality()
+                    || ReadEquality())
                 {
                     ReadForwards();
                     return true;
@@ -77,7 +78,7 @@ namespace Hoodie.GroupMaps.Tests.MapLang
                 return false;
             }
 
-            bool ReadEquals()
+            bool ReadEquality()
             {
                 x.Save();
 
@@ -87,6 +88,23 @@ namespace Hoodie.GroupMaps.Tests.MapLang
                     && x.TryPop(out Node right))
                 {
                     x.Push(new EqualsNode(left, right));
+                    return true;
+                }
+
+                x.Reset();
+                return false;
+            }
+            
+            bool ReadInequality()
+            {
+                x.Save();
+
+                if (x.TryPop(out Node left)
+                    && x.ReadSymbol("!=")
+                    && Read()
+                    && x.TryPop(out Node right))
+                {
+                    x.Push(new InequalsNode(left, right));
                     return true;
                 }
 

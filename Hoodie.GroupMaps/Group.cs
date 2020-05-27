@@ -21,7 +21,8 @@ namespace Hoodie.GroupMaps
         public readonly ImmutableHashSet<N> Nodes;
         public readonly ImmutableHashSet<int> Disjuncts;
         public readonly V Value;
-        public readonly int _hash;
+
+        readonly int _hash;
 
         internal Group(int gid, ImmutableHashSet<N> nodes, ImmutableHashSet<int> disjuncts, V value)
         {
@@ -29,8 +30,9 @@ namespace Hoodie.GroupMaps
             Nodes = nodes;
             Disjuncts = disjuncts;
             Value = value;
-            _hash = nodes.Aggregate(1, (h, n) => h + n.GetHashCode() * 13) + value.GetHashCode() +
-                    disjuncts.GetHashCode();
+            _hash = nodes.Aggregate(1, (ac, n) => ac + (n.GetHashCode() * 13) + 3) 
+                    + disjuncts.Aggregate(17, (ac, d) => ac ^ d.GetHashCode() * 2 + 3) 
+                    + value.GetHashCode();
         }
 
         internal Group<N, V> AddDisjunct(int gid)
@@ -43,6 +45,7 @@ namespace Hoodie.GroupMaps
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
+            if (_hash != other._hash) return false;
             return Nodes.SetEquals(other.Nodes)
                    && EqualityComparer<V>.Default.Equals(Value, other.Value)
                    && Disjuncts.SetEquals(other.Disjuncts);
@@ -55,11 +58,11 @@ namespace Hoodie.GroupMaps
             if (obj.GetType() != GetType()) return false;
             return Equals((Group<N, V>) obj);
         }
-
+        
         public override int GetHashCode()
             => _hash;
 
         public override string ToString()
-            => $"([{string.Join(",", Nodes)}], {Value})";
+            => $"[[{string.Join(",", Nodes)}],{Value}]";
     }
 }

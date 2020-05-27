@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using NUnit.Framework;
 
@@ -48,9 +47,17 @@ namespace Hoodie.GroupMaps.Tests.MapLang
         }
 
         static object _Read(DisjunctionNode node)
-            => ImmutableHashSet<Map<int, Sym>>.Empty
-                .Add(Read(node.Left).As<Map<int, Sym>>())
-                .Union(Read(node.Right).AsSet<Map<int, Sym>>());
+        {
+            var left = Read(node.Left).As<Map<int, Sym>>();
+
+            return Read(node.Right) switch
+            {
+                Map<int, Sym> map => new Disjunction<int, Sym>(new[] {left, map}),
+                ISet<Map<int, Sym>> set => new Disjunction<int, Sym>(new[] { left }.Concat(set)),
+                Disjunction<int, Sym> d => new Disjunction<int, Sym>(d.Disjuncts.Add(left)),
+                _ => throw new Exception("bad value")
+            };
+        }
 
         static object _Read(CombinationNode node)
         {
@@ -63,12 +70,13 @@ namespace Hoodie.GroupMaps.Tests.MapLang
         static object _Read(HitNode node)
         {
             var left = Read(node.Left).As<Map<int, Sym>>();
-            var right = Read(node.Right).AsSet<Map<int, Sym>>();
+            var right = Read(node.Right).AsDisjunction();
             
             return new Action(() =>
             {
                 var result = left.Hit(node.Nodes);
-                Assert.That(result, Is.EquivalentTo(right).Using(MapComp));
+                Assert.That(result, Is.EqualTo(right)
+                    .Using(DisjunctionEqualityComparer.Instance));
             });
         }
         
@@ -79,15 +87,68 @@ namespace Hoodie.GroupMaps.Tests.MapLang
             
             return new Action(() =>
             {
-                Assert.That(left, Is.EqualTo(right).Using(MapComp));
+                Assert.That(left, Is.EqualTo(right)
+                    .Using(MapEqualityComparer.Instance));
             });
         }
-            
-        public static readonly Comparison<Map<int, Sym>> MapComp = (m1, m2) =>
+        
+        static object _Read(InequalsNode node)
         {
-            var groups1 = m1.Groups.Select(g => g.Simple()).ToHashSet();
-            var groups2 = m2.Groups.Select(g => g.Simple()).ToHashSet();
-            return groups1.SetEquals(groups2) ? 0 : -1;
-        };
+            var left = Read(node.Left).As<Map<int, Sym>>();
+            var right = Read(node.Right).As<Map<int, Sym>>();
+            
+            return new Action(() =>
+            {
+                Assert.That(left, Is.Not.EqualTo(right));
+            });
+        }
+
+
+
+        public class GroupEqualityComparer : IEqualityComparer<Group<int, Sym>>
+        {
+            public static GroupEqualityComparer Instance = new GroupEqualityComparer();
+            
+            public bool Equals(Group<int, Sym> g1, Group<int, Sym> g2)
+                => (g1 == null && g2 == null)
+                || (g1 != null && g2 != null
+                    && g1.Nodes.SetEquals(g2.Nodes)
+                    && g1.Value.Equals(g2.Value));
+
+            public int GetHashCode(Group<int, Sym> g)
+                => g.Nodes.Aggregate(7, (ac, n) => ac + n.GetHashCode() * 7 + 5);
+        }
+        
+        public class MapEqualityComparer : IEqualityComparer<Map<int, Sym>>
+        {
+            public static MapEqualityComparer Instance = new MapEqualityComparer();
+            
+            public bool Equals(Map<int, Sym> m1, Map<int, Sym> m2)
+                => (m1 == null && m2 == null) 
+                || (m1 != null && m2 != null
+                    && GetHashCode(m1) == GetHashCode(m2)
+                    && m1.Groups.ToHashSet(new GroupEqualityComparer())
+                        .SetEquals(m2.Groups));
+
+            public int GetHashCode(Map<int, Sym> m)
+                => m.Groups.Aggregate(13, (ac, g) => 
+                    ac + GroupEqualityComparer.Instance.GetHashCode(g) * 3 + 1);
+        }
+
+        public class DisjunctionEqualityComparer : IEqualityComparer<Disjunction<int, Sym>>
+        {
+            public static DisjunctionEqualityComparer Instance = new DisjunctionEqualityComparer();
+
+            public bool Equals(Disjunction<int, Sym> d1, Disjunction<int, Sym> d2)
+                => (d1 == null && d2 == null)
+                || (d1 != null && d2 != null
+                    && GetHashCode(d1) == GetHashCode(d2)
+                    && d1.Disjuncts.ToHashSet(MapEqualityComparer.Instance)
+                        .SetEquals(d2.Disjuncts));
+
+            public int GetHashCode(Disjunction<int, Sym> d)
+                => d.Disjuncts.Aggregate(17, (ac, m) =>
+                    ac + MapEqualityComparer.Instance.GetHashCode(m) * 7 + 3);
+        }
     }
 }
