@@ -62,21 +62,59 @@ namespace Hoodie.GroupMaps
 
         public Disjunction<N, V> Hit(ISet<N> nodes)
         {
-            var hits = nodes
+            var todo = nodes
                 .SelectMany(n => this[n])
-                .ToImmutableHashSet();
-            
-            //we've got all our possible groups here, it's just a case of splitting them between disjuncts
-            //we have to make sure that each group sits next to others it has no issues with
-            //it's a sorting basically: we need to separate out the groups into buckets
-            //the problem is 
+                .ToImmutableDictionary(g => g.Gid);
+
+            var clumps = todo.Values
+                .SelectMany(g => Clump(g, ImmutableHashSet<int>.Empty, todo))
+                .ToArray();
+
+            return Disjunction.From(
+                clumps.SelectMany(s => s
+                    .Select(gid => _groups[gid])
+                    .Select(g => GroupMap.Lift(g.Nodes, g.Value))
+                ));
             
 
-            var map2 = hits.Aggregate(
-                Empty,
-                (m, g) => m.Add(g.Nodes, g.Value));
+            IEnumerable<ImmutableHashSet<int>> Clump(Group<N, V> curr, ImmutableHashSet<int> bad1, ImmutableDictionary<int, Group<N, V>> todo1)
+            {
+                var bad2 = curr.Disjuncts.Aggregate(bad1, (ac, did) => ac.Add(did));
+                var todo2 = todo1.Remove(curr.Gid);
+                var todo3 = todo2.RemoveRange(bad2); //urgh
 
-            return Disjunction.From(new[] {map2});
+                if (todo3.IsEmpty)
+                {
+                    return Enumerable.Repeat(ImmutableHashSet<int>.Empty.Add(curr.Gid), 1);
+                }
+                else
+                {
+                    return todo1.Values
+                        .SelectMany(next =>
+                            Clump(next, bad2, todo3))
+                        .Select(s => s.Add(curr.Gid)); //THIS IS NO GOOD FOR ADDING ON CURRENT...
+                }
+            }
+        }
+
+        class Pending<T>
+        {
+            ImmutableSortedSet<T> _set;
+            //could be dictionary keyed by gid...
+
+            public Pending(IEnumerable<T> vals)
+            {
+                _set = vals.ToImmutableSortedSet();
+            }
+            
+            public bool IsEmpty => _set.IsEmpty;
+
+            public Pending<T> Pop(out T val)
+            {
+                val = _set[0];
+                var set2 = _set.Remove(val);
+                return new Pending<T>(set2);
+            }
         }
         
 
