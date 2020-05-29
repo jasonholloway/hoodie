@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 
 namespace Hoodie.GroupMaps
 {
@@ -11,9 +12,12 @@ namespace Hoodie.GroupMaps
             => Map<N, V>.Lift(nodes, val);
     }
 
-    public class Map<N, V> : IEquatable<Map<N, V>>
+    public class Map<N, V> : IEquatable<Map<N, V>>, IComparable<Map<N, V>>
     {
-        readonly int _gid = 0;
+        static long _nextId = 0;
+
+        readonly long _id = Interlocked.Increment(ref _nextId);
+        readonly int _nextGid = 0;
         readonly ImmutableSortedDictionary<int, Group<N, V>> _groups;
         readonly ImmutableSortedDictionary<N, ImmutableHashSet<int>> _index;
         readonly int _hash;
@@ -30,10 +34,12 @@ namespace Hoodie.GroupMaps
             ImmutableSortedDictionary<N, ImmutableHashSet<int>> index = null
             )
         {
-            _gid = gid;
+            _nextGid = gid;
             _groups = groups ?? ImmutableSortedDictionary<int, Group<N, V>>.Empty;
             _index = index ?? ImmutableSortedDictionary<N, ImmutableHashSet<int>>.Empty;
-            _hash = _groups.Aggregate(17, (ac, g) => (ac + g.GetHashCode() * 3) + 5);
+            _hash = _groups
+                .Select(kv => kv.Value)
+                .Aggregate(17, (ac, g) => (ac + g.GetHashCode() * 3) + 5);
         }
         
         public static readonly Map<N, V> Empty = new Map<N, V>();
@@ -70,53 +76,36 @@ namespace Hoodie.GroupMaps
                 .SelectMany(g => Clump(g, ImmutableHashSet<int>.Empty, todo))
                 .ToArray();
 
-            return Disjunction.From(
-                clumps.SelectMany(s => s
+            var clumpMaps = clumps
+                .SelectMany(s => s
                     .Select(gid => _groups[gid])
-                    .Select(g => GroupMap.Lift(g.Nodes, g.Value))
-                ));
+                    .Select(g => GroupMap.Lift(g.Nodes, g.Value)))
+                .ToArray();
+
+            return Disjunction.From(clumpMaps);
             
 
-            IEnumerable<ImmutableHashSet<int>> Clump(Group<N, V> curr, ImmutableHashSet<int> bad1, ImmutableDictionary<int, Group<N, V>> todo1)
+            IEnumerable<IEnumerable<int>> Clump(Group<N, V> curr, ImmutableHashSet<int> bad1, ImmutableDictionary<int, Group<N, V>> todo1)
             {
                 var bad2 = curr.Disjuncts.Aggregate(bad1, (ac, did) => ac.Add(did));
-                var todo2 = todo1.Remove(curr.Gid);
-                var todo3 = todo2.RemoveRange(bad2); //urgh
+                
+                var todo2 = todo1
+                    .Remove(curr.Gid)
+                    .RemoveRange(bad2);
 
-                if (todo3.IsEmpty)
+                if (todo2.IsEmpty)
                 {
-                    return Enumerable.Repeat(ImmutableHashSet<int>.Empty.Add(curr.Gid), 1);
+                    yield return new[] {curr.Gid};
                 }
                 else
                 {
-                    return todo1.Values
-                        .SelectMany(next =>
-                            Clump(next, bad2, todo3))
-                        .Select(s => s.Add(curr.Gid)); //THIS IS NO GOOD FOR ADDING ON CURRENT...
+                    foreach (var innerClump in todo2.Values.SelectMany(next => Clump(next, bad2, todo2)))
+                    {
+                        yield return new[] {curr.Gid}.Concat(innerClump);
+                    }
                 }
             }
         }
-
-        class Pending<T>
-        {
-            ImmutableSortedSet<T> _set;
-            //could be dictionary keyed by gid...
-
-            public Pending(IEnumerable<T> vals)
-            {
-                _set = vals.ToImmutableSortedSet();
-            }
-            
-            public bool IsEmpty => _set.IsEmpty;
-
-            public Pending<T> Pop(out T val)
-            {
-                val = _set[0];
-                var set2 = _set.Remove(val);
-                return new Pending<T>(set2);
-            }
-        }
-        
 
         private static Map<N, V> Bounce(Map<N, V> left, Map<N, V> right, IMonoid<V> mV)
         {
@@ -239,19 +228,19 @@ namespace Hoodie.GroupMaps
                 (ac, did) =>
                 {
                     var found = ac[did];
-                    var found2 = found.AddDisjunct(_gid);
+                    var found2 = found.AddDisjunct(_nextGid);
                     var ac2 = ac.SetItem(did, found2);
                     return ac2;
                 });
 
             return new Map<N, V>(
-                _gid + 1,
-                groups2.Add(_gid, new Group<N, V>(_gid, _newNodes, disjuncts, newVal)),
+                _nextGid + 1,
+                groups2.Add(_nextGid, new Group<N, V>(_nextGid, _newNodes, disjuncts, newVal)),
                 _newNodes.Aggregate(
                     _index,
                     (ac, n) => ac.TryGetValue(n, out var indexed) 
-                        ? ac.SetItem(n, indexed.Add(_gid))
-                        : ac.Add(n, ImmutableHashSet<int>.Empty.Add(_gid))
+                        ? ac.SetItem(n, indexed.Add(_nextGid))
+                        : ac.Add(n, ImmutableHashSet<int>.Empty.Add(_nextGid))
                     ));
         }
 
@@ -271,7 +260,7 @@ namespace Hoodie.GroupMaps
                     _index,
                     (ac, n) => ac.SetItem(n, ac[n].Remove(gid)));
                 
-                return new Map<N, V>(_gid, groups3, index);
+                return new Map<N, V>(_nextGid, groups3, index);
             }
             
             return this;
@@ -306,11 +295,20 @@ namespace Hoodie.GroupMaps
             return rightGroups?.SequenceEqual(leftGroups) ?? false;
         }
 
+        public int CompareTo(Map<N, V> other)
+        {
+            var hashComparison = _hash.CompareTo(other._hash);
+            return hashComparison == 0 
+                ? _id.CompareTo(other._id)
+                : hashComparison;
+        }
+
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != GetType()) return false;
+            if (GetHashCode() != obj.GetHashCode()) return false;
             return Equals((Map<N, V>) obj);
         }
 

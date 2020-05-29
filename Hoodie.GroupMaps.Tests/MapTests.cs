@@ -1,12 +1,87 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 using NUnit.Framework;
 using static Hoodie.GroupMaps.Tests.Helpers;
 using static Hoodie.GroupMaps.Tests.MapLang.Runner;
 
 namespace Hoodie.GroupMaps.Tests
 {
+    public class ImmutableSortedSetTests
+    {
+        [Test]
+        public void HashMystery1()
+        {
+            var set = ImmutableSortedSet<Dummy>.Empty
+                .Add(new Dummy(13))
+                .Add(new Dummy(11));
+
+            Assert.That(set.Count, Is.EqualTo(2));
+        }
+        
+        [Test]
+        public void HashMystery2()
+        {
+            var set = ImmutableSortedSet<Dummy>.Empty
+                .Add(new Dummy(13))
+                .Add(new Dummy(13));
+
+            Assert.That(set.Count, Is.EqualTo(2));
+        }
+        
+        [Test]
+        public void HashMystery3()
+        {
+            var set = new SortedSet<Dummy>();
+            set.Add(new Dummy(hash: 13));
+            set.Add(new Dummy(hash: 13));
+
+            Assert.That(set.Count, Is.EqualTo(2));
+        }
+
+        public class Dummy : IComparable<Dummy>
+        {
+            static int _nextUniqueId = 0;
+
+            readonly int _id = Interlocked.Increment(ref _nextUniqueId);
+            readonly int _hash;
+
+            public Dummy(int hash)
+            {
+                _hash = hash;
+            }
+
+            public override int GetHashCode()
+                => _hash;
+
+            public int CompareTo(Dummy other)
+            {
+                return _id.CompareTo(other._id);
+            }
+        }
+        
+    }
+    
+    
+    public class DisjunctionTests
+    {
+        [Test]
+        public void SomeTest()
+        {
+            var d = Run<Disjunction<int, Sym>>(@"
+                        A ^ B
+                    ");
+            
+            TestContext.WriteLine(d);
+            
+            Assert.That(d.Disjuncts, Has.Count.EqualTo(2));
+        }
+        
+    }
+    
+    
     public class MapIndexAndDisjunctTests
     {
         [Test]
@@ -374,6 +449,15 @@ namespace Hoodie.GroupMaps.Tests
                  A . != A B
                  . B |  . B
              ");
+
+        [Test]
+        public void Hashes1()
+        {
+            var m1 = BuildMap("A");
+            var m2 = BuildMap("B");
+            
+            Assert.That(m2.GetHashCode(), Is.Not.EqualTo(m1.GetHashCode()));
+        }
 
         [Test]
         public void Disjuncts_Created()

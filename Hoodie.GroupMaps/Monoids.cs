@@ -62,6 +62,6 @@ namespace Hoodie.GroupMaps
             => obj is Sym other && Equals(other);
 
         public override int GetHashCode() 
-            => (Chars != null ? Chars.Aggregate(1, (ac, c) => ac + c.GetHashCode()).GetHashCode() : 0);
+            => (Chars != null ? Chars.Aggregate(1, (ac, c) => ac + c.GetHashCode() * 77 + 93) : 0);
     }
 }

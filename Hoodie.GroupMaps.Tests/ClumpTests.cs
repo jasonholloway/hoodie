@@ -52,7 +52,14 @@ namespace Hoodie.GroupMaps.Tests
         
         
         [Test]
-        public void Complicated()
+        public void Complicated1()
+            => Test(@"
+                A  Z  |   _ _ _ 
+                A  .  =>  A ^ . 
+            ");
+        
+        [Test]
+        public void Complicated2()
             => Test(@"
                 A . C  |   _ _ _ _ _
                 . B .  =>  . ^ . ^ B

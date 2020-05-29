@@ -13,12 +13,12 @@ namespace Hoodie.GroupMaps
     
     public class Disjunction<N, V> : Disjunction, IEquatable<Disjunction<N, V>>
     {
-        public readonly ImmutableHashSet<Map<N, V>> Disjuncts;
+        public readonly ImmutableSortedSet<Map<N, V>> Disjuncts;
         readonly int _hash;
 
         public Disjunction(IEnumerable<Map<N, V>> disjuncts)
         {
-            Disjuncts = disjuncts.ToImmutableHashSet();
+            Disjuncts = disjuncts.ToImmutableSortedSet();
             _hash = Disjuncts.Aggregate(13, (ac, m) => ac + 13 * m.GetHashCode());
         }
 
