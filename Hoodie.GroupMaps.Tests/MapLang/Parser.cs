@@ -30,6 +30,7 @@ namespace Hoodie.GroupMaps.Tests.MapLang
             {
                 if (ReadDisjunction()
                     || ReadCombination()
+                    || ReadCropEquals()
                     || ReadHitEquals()
                     || ReadInequality()
                     || ReadEquality())
@@ -108,6 +109,23 @@ namespace Hoodie.GroupMaps.Tests.MapLang
                     return true;
                 }
 
+                x.Reset();
+                return false;
+            }
+            
+            bool ReadCropEquals()
+            {
+                x.Save();
+                
+                if(x.TryPop(out Node map)
+                   && x.ReadPosSymbol("#>", out var nodes)
+                   && Read()
+                   && x.TryPop(out Node expected))
+                {
+                    x.Push(new CropNode(map, nodes, expected));
+                    return true;
+                }
+                
                 x.Reset();
                 return false;
             }

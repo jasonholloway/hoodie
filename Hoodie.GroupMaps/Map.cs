@@ -63,8 +63,20 @@ namespace Hoodie.GroupMaps
 
         public Map<N, V> Combine(Map<N, V> other, IMonoid<V> mV) 
             => Bounce(this, other, mV);
-        
 
+
+
+        public Map<N, V> Crop(ISet<N> cropTo)
+            => _groups.Values
+                .Select(g => (
+                    nodes: g.Nodes.Intersect(cropTo), 
+                    val: g.Value
+                    ))
+                .Where(t => !t.nodes.IsEmpty)
+                .Aggregate(
+                    Empty,
+                    (ac, t) => ac.Add(t.nodes, t.val));
+        
 
         public Disjunction<N, V> Hit(ISet<N> nodes)
         {

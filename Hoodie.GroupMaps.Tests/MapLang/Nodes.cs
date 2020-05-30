@@ -53,6 +53,16 @@ namespace Hoodie.GroupMaps.Tests.MapLang
         public DisjunctionNode(Node left, Node right) : base(left, right)
         { }
     }
+    
+    public class CropNode : BinaryNode<Node, Node>
+    {
+        public readonly ISet<int> Nodes;
+
+        public CropNode(Node left, ISet<int> nodes, Node right) : base(left, right)
+        {
+            Nodes = nodes;
+        }
+    }
 
     public class HitNode : BinaryNode<Node, Node>
     {

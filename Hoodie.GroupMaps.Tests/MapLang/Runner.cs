@@ -67,6 +67,19 @@ namespace Hoodie.GroupMaps.Tests.MapLang
             return left.Combine(right);
         }
         
+        static object _Read(CropNode node)
+        {
+            var left = Read(node.Left).As<Map<int, Sym>>();
+            var right = Read(node.Right).As<Map<int, Sym>>();
+            
+            return new Action(() =>
+            {
+                var result = left.Crop(node.Nodes);
+                Assert.That(result, Is.EqualTo(right)
+                    .Using(MapEqualityComparer.Instance));
+            });
+        }
+        
         static object _Read(HitNode node)
         {
             var left = Read(node.Left).As<Map<int, Sym>>();
