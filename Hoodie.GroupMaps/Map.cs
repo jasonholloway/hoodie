@@ -92,6 +92,7 @@ namespace Hoodie.GroupMaps
                 .SelectMany(s => s
                     .Select(gid => _groups[gid])
                     .Select(g => GroupMap.Lift(g.Nodes, g.Value)))
+                .Select(m => m.Crop(nodes))
                 .ToArray();
 
             return Disjunction.From(clumpMaps);
