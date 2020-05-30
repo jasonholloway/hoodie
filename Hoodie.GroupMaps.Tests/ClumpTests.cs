@@ -127,5 +127,18 @@ namespace Hoodie.GroupMaps.Tests
                 . B . Z  |   _ _ _ _ _
                 A B . .  =>  A ^ B ^ .
             ");
+        
+        [Test]
+        public void Empty_MeansAvailableDisjunct1()
+            => Test(@"
+                .  =>  . 
+            ");
+        
+        [Test]
+        public void Empty_MeansAvailableDisjunct2()
+            => Test(@"
+                Y Z  |   _ 
+                . .  =>  . 
+            ");
     }
 }

@@ -88,7 +88,8 @@ namespace Hoodie.GroupMaps
                 .SelectMany(g => Clump(g, ImmutableHashSet<int>.Empty, todo));
             
             //if all todos have the same disjunct, then we need to add an empty map
-            //could possibly be done more efficiently as part of recursion
+            //could be done more efficiently as part of recursion
+            
             var dids = todo.Values.SelectMany(g => g.Disjuncts).ToImmutableHashSet();
             if (dids.Any(did => todo.Values.All(g => g.Disjuncts.Contains(did))))
             {
@@ -96,6 +97,10 @@ namespace Hoodie.GroupMaps
             }
 
             return Disjunction.From(clumps);
+            
+            //tho clump below visits groups multiple times already
+            //above has a different journey - wanna go through groups
+            //if there's a single group, then there won't be an empty added
             
 
             IEnumerable<Map<N, V>> Clump(Group<N, V> curr, ImmutableHashSet<int> bad1, ImmutableDictionary<int, Group<N, V>> todo1)
