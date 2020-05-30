@@ -85,20 +85,20 @@ namespace Hoodie.GroupMaps
                 .ToImmutableDictionary(g => g.Gid);
 
             var clumps = todo.Values
-                .SelectMany(g => Clump(g, ImmutableHashSet<int>.Empty, todo))
-                .ToArray();
+                .SelectMany(g => Clump(g, ImmutableHashSet<int>.Empty, todo));
+            
+            //if all todos have the same disjunct, then we need to add an empty map
+            //could possibly be done more efficiently as part of recursion
+            var dids = todo.Values.SelectMany(g => g.Disjuncts).ToImmutableHashSet();
+            if (dids.Any(did => todo.Values.All(g => g.Disjuncts.Contains(did))))
+            {
+                clumps = clumps.Concat(new[] { Empty });
+            }
 
-            var clumpMaps = clumps
-                .SelectMany(s => s
-                    .Select(gid => _groups[gid])
-                    .Select(g => GroupMap.Lift(g.Nodes, g.Value)))
-                .Select(m => m.Crop(nodes))
-                .ToArray();
-
-            return Disjunction.From(clumpMaps);
+            return Disjunction.From(clumps);
             
 
-            IEnumerable<IEnumerable<int>> Clump(Group<N, V> curr, ImmutableHashSet<int> bad1, ImmutableDictionary<int, Group<N, V>> todo1)
+            IEnumerable<Map<N, V>> Clump(Group<N, V> curr, ImmutableHashSet<int> bad1, ImmutableDictionary<int, Group<N, V>> todo1)
             {
                 var bad2 = curr.Disjuncts.Aggregate(bad1, (ac, did) => ac.Add(did));
                 
@@ -108,13 +108,13 @@ namespace Hoodie.GroupMaps
 
                 if (todo2.IsEmpty)
                 {
-                    yield return new[] {curr.Gid};
+                    yield return Empty.Add(curr.Nodes.Intersect(nodes), curr.Value);
                 }
                 else
                 {
                     foreach (var innerClump in todo2.Values.SelectMany(next => Clump(next, bad2, todo2)))
                     {
-                        yield return new[] {curr.Gid}.Concat(innerClump);
+                        yield return innerClump.Add(curr.Nodes.Intersect(nodes), curr.Value);
                     }
                 }
             }

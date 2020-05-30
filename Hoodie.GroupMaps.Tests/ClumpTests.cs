@@ -90,6 +90,13 @@ namespace Hoodie.GroupMaps.Tests
                 A  =>  A
             ");
         
+        //introducing an empty disjunct:
+        //given the disjuncts we've gathered,
+        //are there any off-graph disjuncts that affect all our hits?
+        //if so, then there's space for an empty disjunct
+        
+        //it only takes one disjunct to be fine with it for it to implicitly merge into it
+        
         [Test]
         public void Complicated2()
             => Test(@"
@@ -100,9 +107,25 @@ namespace Hoodie.GroupMaps.Tests
         [Test]
         public void Complicated3()
             => Test(@"
-                A . C  |   _ _ _ _ _
-                . B .  =>  . ^ . ^ B
-                A B .  =>  A | . | B
+                A Z .  |   _ _ _
+                A . C  |   _ _ _
+                A . C  =>  A ^ C 
+            ");
+        
+        [Test]
+        public void Complicated4()
+            => Test(@"
+                A . Y Z  |   _ _ _
+                . B . .  =>  . ^ B
+                A B . .  =>  A | B
+            ");
+        
+        [Test]
+        public void Complicated5()
+            => Test(@"
+                A . Y Z  |   _ _ _ _ _
+                . B . Z  |   _ _ _ _ _
+                A B . .  =>  A ^ B ^ .
             ");
     }
 }
