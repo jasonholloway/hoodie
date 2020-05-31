@@ -90,18 +90,18 @@ namespace Hoodie.GroupMaps.Tests
                 A  =>  A
             ");
         
-        //introducing an empty disjunct:
-        //given the disjuncts we've gathered,
-        //are there any off-graph disjuncts that affect all our hits?
-        //if so, then there's space for an empty disjunct
-        
-        //it only takes one disjunct to be fine with it for it to implicitly merge into it
-        
         [Test]
-        public void Complicated2()
+        public void Complicated2_1()
             => Test(@"
                 A Z  |   _ _ _ 
                 A .  =>  A ^ . 
+            ");
+        
+        [Test]
+        public void Complicated2_2()
+            => Test(@"
+               Z A  |   _ _ _ 
+               . A  =>  A ^ . 
             ");
         
         [Test]
@@ -113,7 +113,35 @@ namespace Hoodie.GroupMaps.Tests
             ");
         
         [Test]
-        public void Complicated4()
+        public void Complicated3_2()
+            => Test(@"
+                A Z .  |   _ _ _
+                A . C  =>  A ^ C 
+            ");
+        
+        [Test]
+        public void Complicated4_1()
+            => Test(@"
+                A . Y  |   _ _ _
+                A B .  =>  A ^ B
+            ");
+        
+        [Test]
+        public void Complicated4_2()
+            => Test(@"
+                A Y .  |   _ _ _
+                A . B  =>  A ^ B
+            ");
+        
+        [Test]
+        public void Complicated4_3()
+            => Test(@"
+                Y A .  |   _ _ _
+                . A B  =>  A ^ B
+            ");
+        
+        [Test]
+        public void Complicated5()
             => Test(@"
                 A . Y Z  |   _ _ _
                 . B . .  =>  . ^ B
@@ -121,7 +149,7 @@ namespace Hoodie.GroupMaps.Tests
             ");
         
         [Test]
-        public void Complicated5()
+        public void Complicated6()
             => Test(@"
                 A . Y Z  |   _ _ _ _ _
                 . B . Z  |   _ _ _ _ _

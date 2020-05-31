@@ -1,7 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 
 namespace Hoodie.GroupMaps
@@ -76,9 +79,169 @@ namespace Hoodie.GroupMaps
                 .Aggregate(
                     Empty,
                     (ac, t) => ac.Add(t.nodes, t.val));
-        
 
         public Disjunction<N, V> Hit(ISet<N> nodes)
+        {
+            var urClump = new Clump(this, 
+                nodes.SelectMany(LookupIndexed)
+                    .Distinct()
+                    .Select(gid => _groups[gid])
+                    .ToImmutableDictionary(
+                        g => g.Gid,
+                        g => new ClumpGroup(g, g.Disjuncts)
+                        ));
+
+            var clumps = Settle(new HashSet<Clump>(), urClump);
+            
+            return Disjunction.From(clumps.Select(c => c.ToMap().Crop(nodes)));
+            
+
+            IEnumerable<Clump> Settle(HashSet<Clump> seenBefore, Clump clump)
+            {
+                if (seenBefore.Contains(clump))
+                {
+                    return Enumerable.Empty<Clump>();
+                }
+                else
+                {
+                    seenBefore.Add(clump);
+                }
+                
+                if(!clump.TryGetDisjunct(out var tup)) 
+                {
+                    return new[] {clump};
+                }
+                else
+                {
+                    var (lgid, rgid) = tup;
+                    
+                    var leftClump = clump.RemoveGroup(rgid);
+                    var leftResults = Settle(seenBefore, leftClump);
+
+                    var rightClump = clump.RemoveGroup(lgid);
+                    var rightResults = Settle(seenBefore, rightClump);
+
+                    return leftResults.Concat(rightResults);
+                }
+            }
+        }
+
+        
+        class Clump : IEquatable<Clump>, IComparable<Clump>
+        {
+            static long _nextId = 0;
+
+            readonly long _id = Interlocked.Increment(ref _nextId);
+            readonly int _hash;
+
+            public readonly Map<N, V> Map;
+            public readonly ImmutableSortedDictionary<int, ClumpGroup> Groups;
+
+            public Clump(Map<N, V> map, IDictionary<int, ClumpGroup> groups)
+            {
+                Map = map;
+                Groups = groups.ToImmutableSortedDictionary();
+                _hash = groups.Aggregate(0, (ac, kv) => (ac + (kv.Key + 1).GetHashCode() * 1379) + kv.Value.Disjuncts.Count);
+            }
+
+            public bool TryGetDisjunct(out (int, int) tup)
+            {
+                var found = Groups.Values
+                    .SelectMany(cg => cg.Disjuncts.Select(did => Tuple.Create(cg.Group.Gid, did)))
+                    .FirstOrDefault();
+
+                if (found != null)
+                {
+                    tup = found.ToValueTuple();
+                    return true;
+                }
+                else
+                {
+                    tup = default;
+                    return false;
+                }
+            }
+
+            public Clump RemoveGroup(int gid)
+            {
+                var groups2 = Groups.Remove(gid);
+
+                var groups3 = groups2.Values.Aggregate(
+                    groups2,
+                    (ac, g) =>
+                    {
+                        var disjuncts2 = g.Disjuncts.Remove(gid);
+                        if (!disjuncts2.Equals(g.Disjuncts))
+                        {
+                            return ac.SetItem(g.Group.Gid, new ClumpGroup(g.Group, disjuncts2));
+                        }
+                        else
+                        {
+                            return ac;
+                        }
+                    });
+                
+                return new Clump(Map, groups3);
+            }
+
+            public Map<N, V> ToMap()
+                => Groups.Values.Aggregate(Empty,
+                    (m, g) => m.Add(g.Group.Nodes, g.Group.Value));
+            
+            #region Equality, Comparable
+
+            public override string ToString()
+                => $"({string.Join(",", Groups.Keys)})";
+
+            public bool Equals(Clump other)
+            {
+                if (ReferenceEquals(null, other)) return false;
+                if (ReferenceEquals(this, other)) return true;
+                if (_id == other._id) return true;
+                if (_hash != other._hash) return false;
+                if (Map._id != other.Map._id) return false;
+                return Groups.Keys.SequenceEqual(other.Groups.Keys)
+                    && Groups.Values.SelectMany(g => g.Disjuncts)
+                        .SequenceEqual(other.Groups.Values.SelectMany(g => g.Disjuncts));
+            }
+            
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != this.GetType()) return false;
+                return Equals((Clump) obj);
+            }
+
+            public int CompareTo(Clump other)
+            {
+                var hashComparison = _hash.CompareTo(other._hash);
+                return hashComparison == 0 
+                    ? _id.CompareTo(other._id)
+                    : hashComparison;
+            }
+
+            public override int GetHashCode()
+                => _hash;
+            
+            #endregion
+        }
+
+        class ClumpGroup
+        {
+            public readonly Group<N, V> Group;
+            public readonly ImmutableHashSet<int> Disjuncts;
+
+            public ClumpGroup(Group<N, V> @group, ImmutableHashSet<int> disjuncts)
+            {
+                Group = @group;
+                Disjuncts = disjuncts;
+            }
+        }
+        
+        
+
+        public Disjunction<N, V> _Hit(ISet<N> nodes)
         {
             var todo = nodes
                 .SelectMany(n => this[n])

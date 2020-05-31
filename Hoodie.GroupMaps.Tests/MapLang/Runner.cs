@@ -90,6 +90,8 @@ namespace Hoodie.GroupMaps.Tests.MapLang
                 var result = left.Hit(node.Nodes);
                 Assert.That(result, Is.EqualTo(right)
                     .Using(DisjunctionEqualityComparer.Instance));
+                
+                TestContext.WriteLine(result);
             });
         }
         
