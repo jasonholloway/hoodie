@@ -197,13 +197,83 @@ how do we clump together hit groups?
 all hit groups stand to be combined with our input group
 the question is how many projections we need to make into how many spaces
 
-A . C _  _ _ _ _ _
+A . C _ _ _ _ _ _
 . B . # . ^ . ^ B
 A B . # A _ . _ B
 
 ie 3 clumps 
 
 so, let's parse that
+
+blah blah blah
+
+---------------------------------------------------------
+
+the thinking now is that our atomised clumps should be re-clumped together on a second pass
+
+this is because our divide and conquer is over-splitting;
+
+
+quite simply, links need making between node sthat can conjoin, although they may, through conjunctions through other blocks indirecetly, may not be able to conjoin with other groups uniquely;
+that is they may be clumped multiple times to reflect 
+
+so I was right; single groups don't appear only once, they reappear as many times as they have to to /settle/ the selection of clumps; if a clump is lively, then is must be split down, albeit at the cost of replication duplication if needed. The negative approach of splitting out makes for a kind of copy-on-write, we split the clump into two clumps, but we don't fracture the entire clump, only two groups at a time; but we already have this! in taking into account a fracture, it only affect sthe two groups it knows about; in digesting the fact of the fracture, other changes across the two now independent clumps must now be rippled and setttled; we fracture, then fracture again and again, till we have paid due to each atomic fracture in turn; but at this point we may have possible conjunctions that could be made; we have split out everything that needs to be split out; now is the time for bringing together what we can without introducing internal disjunctions; it seems like this step will again make use of a map
+
+each clump will be represented as bits on a map; clumps that don't overlap and don't hate each other can coexist, must coexist
+
+the question turns at this point towards why it is that we don't start with this approach: we have groups that are separate and consistent in themselves; they take up space on the map, and they confess to hating certain others; isn't each of these effectively a primitive but true clump? that is, the whole splitting of the primordial clump - what does it achieve, anyway?
+
+we start with finding each possible (all things being equal) coexistence of groups on the map; we then filter all these possibilities to prune all those with internal contradictions
+but - in doing this we will have to list single groups next to blank space, which clump is always viable as a last resort; the fact is we should only represent a group alone if it can't coexist anywhere else; it is a sad state for the group to be in; 
+
+but we already have exactly this information, in the form of our disjunctions; given a starting group, we find each other group that coexists with our starting group, and with each choice, we try to adopt yet another into our forming clump; and so we gradually take on more and more groups till we have found all that can coexist, in every combination
+
+this was our original approach, but it leads (or at least it did) to the problem of representing empty sets in our resultant clumps; 
+off-graph groups should be represented as a kind of zero group
+
+so starting from complete atomisation of groups, which is where we start from, we enumerate all the possible combinations conjunctions
+and as a very final stage we deduplicate our clumps
+
+
+------------------------------------------
+
+
+the groups begin in their separation; we enumerate all the frames of possibility, which include empty off-graph groups; these are then deduplicated,
+leaving us with the definitive set of possible frames
+
+this is against the grain of the previous approach 
+
+--------------------------------------------------------
+
+carrier {
+  name = HERMES ^ DPD ^ UPS
+}
+
+country {
+  name = UK ^ US,
+	code
+}
+
+package: {
+  size,
+	value
+}
+
+package.size: 1-100
+
+(country.code == UK) => (
+  package.size < 10
+)
+
+(carrier.name == 'HERMES') => (
+  package.value < 500
+	package.size = 1-10
+)
+
+
+
+
+
 
 
 

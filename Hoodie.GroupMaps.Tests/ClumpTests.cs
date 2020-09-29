@@ -105,6 +105,15 @@ namespace Hoodie.GroupMaps.Tests
             ");
         
         [Test]
+        public void Complicated2_3()
+            => Test(@"
+                . . Z B  |   _ _ _
+                A Y . .  |   _ _ _ 
+                A . . .  =>  A ^ . 
+                . . . B  =>  B | .
+            ");
+        
+        [Test]
         public void Complicated3()
             => Test(@"
                 A Z .  |   _ _ _
@@ -157,6 +166,36 @@ namespace Hoodie.GroupMaps.Tests
             ");
         
         [Test]
+        public void Complicated7_1()
+            => Test(@"
+                A . C  =>  A ^ C
+                A B .  =>  A | B
+            ");
+        
+        [Test]
+        public void Complicated7_2()
+            => Test(@"
+                . C A  =>  A ^ C
+                B . A  =>  A | B
+            ");
+        
+        [Test]
+        public void Complicated_8()
+            => Test(@"
+                . . C  =>  C _ C
+                A B .  =>  A ^ B
+            ");
+        
+        
+        //our problem is that we're treating the relations as transitive - ie splitting one disjunct then has an effect on others; it's ghettoizing groups that really want to comingle in the commons
+        //removing the other node when splitting a disjunct is alright, but it shouldn't also mean that disjuncts of other nodes are also cleansed; because in reality these other nodes still refer to others 
+        
+        //it's more like - 
+        //
+        //
+        //
+        
+        [Test]
         public void Empty_MeansAvailableDisjunct1()
             => Test(@"
                 .  =>  . 
@@ -168,5 +207,7 @@ namespace Hoodie.GroupMaps.Tests
                 Y Z  |   _ 
                 . .  =>  . 
             ");
+        
+        
     }
 }

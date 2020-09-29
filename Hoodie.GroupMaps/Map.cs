@@ -1,10 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Data;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading;
 
 namespace Hoodie.GroupMaps
@@ -79,6 +76,36 @@ namespace Hoodie.GroupMaps
                 .Aggregate(
                     Empty,
                     (ac, t) => ac.Add(t.nodes, t.val));
+                    
+                    
+        //I need to remember what I was doing basically, to get back on the track here
+        //clumping was the issue, the desired mechanism was one to - what?
+        //groups aren't allowed to overlap, there can only be one group in each position,
+        //
+        //so in bringing two groups together - the atomic action of my system - choices have to be made, flattening down to one choice from a set
+        //or if not made eagerly, the choices must be maintained and explored and propagated till they whittle themselvese down
+        //
+        //we're expecting on output a conjunction of possibilities
+        //this conjunction will then be used to bounce down the two graphs
+        //
+        //each input graphis in the first place a bundle of conjunctions
+        //in combining two bundles of conjunctions, the crinkles should be ironed out, things should solidify
+        //
+        //implied that rhs is smaller than lhs; if rhs is in the first place a conjunction, if only implicitly, 
+        //all conjunctions on the right must be reflected in the result
+        //so we clump the rhs first off; in fact we must clump both sides
+        //then multiply the conjunctions 
+        //
+        //that's the basic way to deal with conjunctions multiplied: each possiblity must be mated with each possibility,
+        //then they must be filtered for impossibilities: that's the general approach
+        //
+        //firstly is a kind of lifting out of both sides
+        //we only concern ourselvees with groups that impinge on our area
+        //and we multiply together all disjuncts, squaring them
+        //so now the idea is to zip together discjuntion-wise, instead of going per port
+        
+        
+        
 
         public Disjunction<N, V> Hit(ISet<N> nodes)
         {
@@ -90,6 +117,33 @@ namespace Hoodie.GroupMaps
                         g => g.Gid,
                         g => new ClumpGroup(g, g.Disjuncts)
                         ));
+            
+            //off-graph disjuncts should be represented as empty sets
+            //for below settling
+            //^ THE TRUTH!!
+            
+            //everything is loaded in as a separate group
+            //now we want to go about clumping them....
+            //
+            //this is different to approach above, whereby we have an unsettled clump up front
+            //then gradually fracture it till no more fracturing can be done
+            //
+            //the other approach is to start from complete separation, and gradually tack on new choices, like
+            //a brute force solving of a jigsaw, with every piece combination being tried in turn
+            //but whether we like it or not, this is how we start off; even if all is housed in a single big clump,
+            //it is essentially fractured, as we can't trust the nature of the container, can't infer anything
+            //from the fact of its containment.
+            //
+            //so sticking it all in a clump is gaining us nothing? it lets us pose the problem as one that always has a clump as a subject
+            //it's a clump, but a frangible clump - we grind it till the bits become solid, like a millstone on wheat
+            //from here we divide and conquer, we hope; we choose a fracture then snap it
+            //the problem is this fundamentally can't bring together, which was the original point of the clump, of course
+            //
+            //the overall map has links of disjunction; we are now in the opposite business of forming conjunctions
+            //
+            //quite simply, links need making between 
+            //
+            
 
             var clumps = Settle(new HashSet<Clump>(), urClump);
             
@@ -191,7 +245,7 @@ namespace Hoodie.GroupMaps
             #region Equality, Comparable
 
             public override string ToString()
-                => $"({string.Join(",", Groups.Keys)})";
+                => $"{{{string.Join(",", Groups.Values.Select(g => g.Group.Value))}}}";
 
             public bool Equals(Clump other)
             {

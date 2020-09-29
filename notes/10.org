@@ -1,0 +1,225 @@
+*Recall II*
+
+I've got two sets of groups, and I want to merge them and their disjuncts together
+
+Disjuncts multiply across disjuncts: fair enough. But to perform this multiplaction, I need disjuncts per graph, rather than per point
+
+Instead of multiplying entire graphs, which would involve maintaining graph-wide disjuncts (still a dream this, but have repeatedly decided on its impossibility),
+we want to be able to do local grafts of graphs, so as to minimise wasted effort (though if we ignored this effort, burning up compute, this would be easier)
+
+--------------------------
+
+Again, why can't we maintain graph-wide disjuncts?
+
+By indexing per port we are maintaining this information, only not in an immediately accessible form. 
+
+The real form is as a graph of clumps (ie disjuncts); but some disjuncts have no opinion on others, as they don't overlap; 
+which means the graph shouldn't be total, in that not all relations should be stated.  
+
+In this form of islands linked yb causeways, how do we multiply? Surely by the same approach: multiplication given two sides flatly enumerated.
+Dealing in groups by themselves means improper clumping: they should be brought together with relations between them.
+
+this is what we're doing:
+(AB | BC) + (D | E) * (FG | GH)
+
+our optimisation above sneak peaks to make clumps fall out of the equation: we don't need to multiply when there's no intersection
+if we forgot about this it would ease our way
+
+so, on each merging, we are merging across the entire graph
+which means each clump is mated with each clump
+
+---
+
+*how to contruct the graph of clumps*
+
+the simplest case:
+	- A * B
+
+		if they clash: 
+			A | B
+		else
+			A + B
+		
+  - A + B * C
+		
+		A + B + C
+		(C | A) + B
+		A + (C | B)
+		
+		all the above can be unpacked from
+		A * B * C
+		
+		sometimes * amounts to +, sometimes to |, depending on the groups overlaid
+		
+		-------
+		what if C overlaps with both??
+		(C | A) + (C | B)
+		
+		but... C can't appear in both, can it?
+		it would do, except...
+
+		* does not amount to |: there's no choice involved here; we're really after &
+			
+		-------
+
+		A & B
+		A + B or AB (which is the same as the first)
+
+		------
+
+		(A + B) & C
+		A + B + C or ABC (again the same)
+		
+		------
+
+		A|B + C
+		A+C | B+C
+		
+		A|B + C|D
+		(AC|AD) | (BC|BD)
+		
+		A|B + C|D
+		A+C | A+D | B+C | B+D
+		
+		this is all before any overlaps are even considered, we just have disjuncts
+		and addition
+		
+		but overlaps must be taken into account to decide on the disjuncts
+		
+		-------
+		
+	  so we can't start off with addition, as addition only occurs if there is no overlap
+		
+		we start off wanting two things to be true together (hence the &)
+		this means we must add them together; overlaps mean combination
+		bringing them together can't introduce disjunctions, thought disjunctions might multiply out once introduced
+		
+		so where do the disjunctions come from in the first place?
+
+		where, where, where?
+		
+		conditions activating fragments
+		some values will activate different fragments;
+		so alternate fragments might be possible at the same time
+
+		this overlaying of another possible group isn't the same as merging, as combination by addition
+		so it's now as if there are two atomic actions: anding and or-ing
+		
+		with the or, we're not necessarily or-ing the entire graph at once though, we're or-ing the elements within the graph,
+		as otherwise, as we bring one fragment into play, it would not interact at all with the wider graph; disjuntions are not total, but proceed from
+		one fork point, side-branch of the overall graph, not separate but diverging in part fromwhat we had previously
+		
+		this or that branch could be taken, meaning that one point is joined to one point or another point
+		one group is true or another group is true
+		there may be another choice elsewhere that also interplays here, multiplying the disjunctions in front of us
+		
+		but this structureless dumping of disjunctions loses the true interactions of the choices available
+		whatever one choice implicates is lost
+		
+		in opting for one choice, it invalidates not just the flattened local alternatives per point, but also those more structuredly per branch
+		as possibilities are enumerated, they should leave behind them activators that fill not just themselves, but all possibles in the run up to that possible
+		with truth power: an assertion flows back up the structure, like lightning hitting a high building andsinking to earth; certainty must root itself
+		
+		each and every possible is there only because previous things were possible
+		
+		what if two possibles were chosen to narrow down but not finalize the set? then two separate certainties would root simultaneously
+		or rather, a new condition would be imposed that made allbut two disjuncts impossible
+		impossibility would ripple backwards through the graph here
+		
+		but there is a separate mode just touched upon: 
+		
+
+	--------------
+
+	when a condition is activated, then new groups are merged into the current graph,
+	but before this, the possibles coexist, with their outflowing values appearing in the downstream indices
+	
+	before any certain activation, it was always possible the fragment would be integrated, and so an entire lobe needed to be maintained, giving sneak previews into possible futures
+
+	----
+
+	when a choice is made, it should propagate and make impossible other options. But the point of choice, the crux of the matter, isn't in the flattened projectoin, it is where it is, above.
+
+	A group has a choice of values, though with different values come different other groups. The choice of a value in one group brings with it the annihilation of other groups.
+	
+	Two separate groups are projected, and must appear as possible groups when we probe into the graph from below
+	but when we choose between the two, the point of choice isn't there in the graph
+	rather it is above, hanging off the decision to flow possibility in two directions rather than one
+	
+	in choosing at the bottom, certainty should propagate back up to this point, and invalidate whatever other options there are
+	this is in contrast with the approach so far, in which disjuncts are chosen between directly in the porjectedgraph itself
+	
+	in the graph there will be different possibilities, but we don't propagate directly in the graph: rather the choice is posed, of values primarily, and from this simple choice other things proceed - via what and how?
+
+	all possible values precipitate into the graph, though choosing doesn't happen within the graph
+	
+	
+
+
+
+
+
+	
+
+
+
+
+
+
+	
+
+	
+
+
+
+
+
+
+		
+
+
+
+		
+
+
+		
+
+
+
+
+
+
+
+
+		
+
+
+	
+		
+
+
+		
+
+		
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---
