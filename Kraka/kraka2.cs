@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Kraka;
 using NUnit.Framework;
 
 //Unix: A Bit Like DotNet
+//Unix: A Programmer's Paradise(?)
 
 namespace kraka2
 {
@@ -167,7 +169,7 @@ namespace kraka2
                 Val.Combine(Val, other.Val));
 
         public override string ToString()
-            => $"<{string.Join(", ",Nodes)}> = {Val}";
+            => $"<{string.Join(", ",Nodes)}> {Val}";
     }
 
 
@@ -183,43 +185,62 @@ namespace kraka2
         }
 
         static int _depth = 0;
-        static string Prefix => new string(Enumerable.Range(0, _depth).Select(_ => '\t').ToArray());
+        static string Prefix => new string(Enumerable.Range(0, (_depth & 0x1F) << 1).Select(_ => ' ').ToArray());
+
+        private Graph Propagate(Bind b)
+            => Propagate(b, BindStates[b]);
         
-        private Graph Propagate(Bind b, BindState s)
+        private Graph Propagate(Bind b, BindState s, Node n0 = null)
         {
-            TestContext.WriteLine($"{Prefix}PROP {s}");
-            _depth++;
-            TestContext.Write($"{Prefix}{s.Val}");
-            
-            var r = s.Nodes.Aggregate(
-                (g: this, v: s.Val),
-                (ac, n) =>
+            if (s.Nodes.IsEmpty) return this;
+            else
+            {
+                var g = this;
+                var v0 = s.Val;
+                
+                _depth++;
+                Log.WriteLine($"{Prefix}PROP {s}");
+                _depth++;
+                Log.Write($"{Prefix}{v0}");
+                
+                var nodes = s.Nodes.ToArray();
+                int i = 0, j = 0;
+                var v = v0;
+                
+                while (true)
                 {
-                    TestContext.WriteLine($" -> {n}");
+                    var n = nodes[i];
+
+                    if (n != n0 || !v.Equals(v0))
+                    {
+                        Log.WriteLine($" -> {n}");
+                        
+                        var (g2, v2) = n.Impel(g, v);
+                        var v3 = Val.Combine(v, v2);
+                        Log.Write($"{Prefix}{v3}");
+
+                        if (!v3.Equals(v))
+                        {
+                            j = i;
+                        }
+
+                        g = g2;
+                        v = v3;
+                    }
                     
-                    var (g2, v2) = n.Impel(ac.g, ac.v);
-                    var v3 = Val.Combine(ac.v, v2);
-                    
-                    TestContext.Write($"{Prefix}{v3}");
-                    
-                    return (g2, v3);
-                });
+                    i = (i + 1) % nodes.Length;
+                    if (i == j) break;
+                }
             
-            TestContext.WriteLine();
-            _depth--;
-            
-            //but this only stores final val
-            //Node.Impel should somehow update BindStates...
-            
-            return new Graph(
-                r.g.NodeBinds,
-                r.g.BindStates.SetItem(b, s.WithVal(r.v))
-                );
+                Log.WriteLine();
+                _depth-=2;
+
+                return new Graph(
+                    g.NodeBinds,
+                    g.BindStates.SetItem(b, s.WithVal(v))
+                    );
+            }
         }
-        
-        //in merging, we should aggregate BindStates
-        //
-        //
 
         public Graph MergeWith(Graph other)
             => other.BindStates
@@ -259,18 +280,18 @@ namespace kraka2
         public Graph Bind(IEnumerable<Node> nodes, Val v = null)
         {
             var b = new Bind();
-
+            
             var g2 = new Graph(
-                nodes.Aggregate(
-                    ImmutableDictionary<Node, Bind>.Empty,
-                    (ac, n) => ac.Add(n, b)),
-                ImmutableDictionary<Bind, BindState>.Empty
-                    .Add(b, 
-                        nodes.Aggregate(
-                            BindState.Empty,
-                            (ac, n) => ac.WithNode(n))
-                        .WithVal(v ?? Val.Any))
-            );
+                    nodes.Aggregate(
+                        ImmutableDictionary<Node, Bind>.Empty,
+                        (ac, n) => ac.Add(n, b)),
+                    ImmutableDictionary<Bind, BindState>.Empty
+                        .Add(b, 
+                            nodes.Aggregate(
+                                BindState.Empty,
+                                (ac, n) => ac.WithNode(n))
+                            .WithVal(v ?? Val.Any))
+                ); //.Propagate(b);
             
             return MergeWith(g2);
         }
@@ -280,6 +301,22 @@ namespace kraka2
         
         public Graph Bind(Node node1, Node node2, Val val = null)
             => Bind(new[] { node1, node2 }, val);
+
+        public Graph BindVal(Node node, Val val)
+        {
+            var (b, s) = 
+                NodeBinds.TryGetValue(node, out var _b) 
+                && BindStates.TryGetValue(_b, out var _s)
+                    ? (_b, _s)
+                    : (new Bind(), BindState.Empty);
+            
+            var s2 = s.WithNode(node).WithVal(val);
+            
+            return new Graph(
+                    NodeBinds.SetItem(node, b),
+                    BindStates.SetItem(b, s2)
+                ).Propagate(b, s2, node);
+        }
         
         public Val GetVal(Node node)
         {
@@ -295,8 +332,15 @@ namespace kraka2
 
         public static Graph Empty => new Graph(null);
     }
-    
-    public abstract class Machine {}
+
+    public abstract class Machine
+    {
+        static int _nextId = 1;
+        protected readonly int Id = _nextId++;
+
+        public override string ToString()
+            => $"{GetType()}@{Id}";
+    }
 
     public class Constant : Machine
     {
@@ -305,7 +349,7 @@ namespace kraka2
         public Constant(Val val)
         {
             Node = new Node(
-                $"Const({val}):N",
+                $"Const({val})@{Id}:N",
                 (g, _) => (g, val));
         }
 
@@ -321,13 +365,13 @@ namespace kraka2
         public Abs()
         {
             Left = new Node(
-                "Abs:L",   
+                $"Abs@{Id}:L",   
                 (g, v) =>
                 {
                     switch (v)
                     {
                         case Int i:
-                            var g2 = g.Bind(Right, Val.Int(Math.Abs(i.Value)));
+                            var g2 = g.BindVal(Right, Val.Int(Math.Abs(i.Value)));
                             return (g2, v);
                         
                         case Any _:
@@ -339,25 +383,24 @@ namespace kraka2
                 });
             
             Right = new Node(
-                "Abs:R",
+                $"Abs@{Id}:R",
                 (g, v) =>
                 {
                     switch (v)
                     {
                         case Int i when i.Value >= 0: {
-                            var g2 = g.Bind(Left, Val.Choice(Val.Int(-i.Value), i));
+                            var g2 = g.BindVal(Left, Val.Choice(Val.Int(-i.Value), i));
                             return (g2, v);
                         }
 
                         case Int i:
                             throw new InvalidOperationException();
+                        
+                        case Choice c:
+                            throw new NotImplementedException();
 
                         case Any _: {
-                            //what's the value on Left?
-
                             var v2 = g.GetVal(Right);
-                            
-                            TestContext.WriteLine($"r {v2}");
                             return (g, v2);
                         }
 
@@ -449,6 +492,11 @@ namespace kraka2
             Assert.That(result, Is.EqualTo(Val.Choice(Val.Int(-1), Val.Int(1))));
         }
         
+        //below does infinite regress
+        //
+        //
+        //
+        
         [Test]
         public void Abs_Chained()
         {
@@ -457,13 +505,26 @@ namespace kraka2
             var abs2 = new Abs();
             
             var result = Graph.Empty
-                .Bind(abs1.Left, x.Node)
-                .Bind(abs1.Right, abs2.Left)
-                .GetVal(abs2.Right);
-            
-            TestContext.WriteLine(result);
+                .Bind(x.Node, abs1.Left)
+                .Bind(abs1.Right, abs2.Right)
+                .GetVal(abs2.Left);
 
-            Assert.That(result, Is.EqualTo(Val.Choice(Val.Int(-1), Val.Int(1))));
+            Assert.That(result, Is.EqualTo(Val.Choice(Val.Int(-7), Val.Int(7))));
+        }
+        
+        [Test]
+        public void Abs_Abs()
+        {
+            var x = new Constant(7);
+            var abs1 = new Abs();
+            var abs2 = new Abs();
+            
+            var result = Graph.Empty
+                .Bind(x.Node, abs1.Right)
+                .Bind(abs1.Left, abs2.Right)
+                .GetVal(abs2.Left);
+
+            Assert.That(result, Is.EqualTo(Val.Choice(Val.Int(-7), Val.Int(7))));
         }
         
     }
