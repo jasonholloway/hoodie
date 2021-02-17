@@ -7,11 +7,11 @@ namespace Hoodie
 
     public static class Extensions
     {
-        public static GraphOp<Nil> Effect<T>(this GraphOp<T> op)
+        public static GraphOp<Nil> EffectOnly<T>(this GraphOp<T> op)
             => op.Select(_ => default(Nil));
         
-        public static GraphOp<Nil> Effect<T>(this DisjunctOp<T> op)
-            => op.Invoke.Effect();
+        public static GraphOp<Nil> EffectOnly<T>(this DisjunctOp<T> op)
+            => op.Invoke.EffectOnly();
     }
     
     public static class GraphOps
@@ -49,8 +49,8 @@ namespace Hoodie
         {
             var areEqual = new AreEqualConstraint();
             return
-                from _1 in Bind(left, areEqual.Left).Effect()
-                from _2 in Bind(right, areEqual.Right).Effect()
+                from _1 in Bind(left, areEqual.Left).EffectOnly()
+                from _2 in Bind(right, areEqual.Right).EffectOnly()
                 select areEqual.Result;
         }
         
@@ -58,8 +58,8 @@ namespace Hoodie
         {
             var greaterThan = new GreaterThanConstraint();
             return
-                from _1 in Bind(left, greaterThan.Left).Effect()
-                from _2 in Bind(right, greaterThan.Right).Effect()
+                from _1 in Bind(left, greaterThan.Left).EffectOnly()
+                from _2 in Bind(right, greaterThan.Right).EffectOnly()
                 select greaterThan.Result;
         }
         
@@ -67,12 +67,12 @@ namespace Hoodie
         {
             var isNumber = new IsNumberConstraint();
             return
-                from _ in Bind(sub, isNumber.Inner).Effect()
+                from _ in Bind(sub, isNumber.Inner).EffectOnly()
                 select isNumber.Result;
         }
 
         public static GraphOp<Nil> Assert(Port port)
-            => Bind(port, true).Effect();
+            => Bind(port, true).EffectOnly();
 
         public static GraphOp<Nil> Assert(GraphOp<Port> graphOp)
             => from port in graphOp

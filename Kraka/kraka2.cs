@@ -10,6 +10,31 @@ using NUnit.Framework;
 
 namespace kraka2
 {
+
+    public struct Woo
+    {
+        public int Val;
+    }
+
+    // public class TestIt
+    // {
+    //     private Dictionary<int, Woo> _d = new Dictionary<int, Woo>();
+    //     
+    //     
+    //     public static Blah()
+    //     {
+    //         double d = 100;
+    //         int i = 10;
+    //
+    //         var r = d - i;
+    //         var r2 = Math.Abs((d - i));
+    //
+    //
+    //     }
+    //     
+    // }
+    
+    
     public class Int : Any, IEquatable<Int>
     {
         public readonly int Value;
@@ -122,20 +147,21 @@ namespace kraka2
         static Val _Combine(Any l, Any r) => r;
     }
 
-
     
     public class Node
     {
+        public delegate (Graph, Val) Handler(Handler self, Graph g, Val v);
+        
         readonly string _name;
-        readonly Func<Graph, Val, (Graph, Val)> _fn;
+        readonly Handler _fn;
 
-        public Node(string name, Func<Graph, Val, (Graph, Val)> fn)
+        public Node(string name, Handler fn)
         {
             _name = name;
             _fn = fn;
         }
 
-        public (Graph, Val) Impel(Graph g, Val v) => _fn(g, v);
+        public (Graph, Val) Impel(Graph g, Val v) => _fn(_fn, g, v);
 
         public override string ToString()
             => _name;
@@ -350,7 +376,7 @@ namespace kraka2
         {
             Node = new Node(
                 $"Const({val})@{Id}:N",
-                (g, _) => (g, val));
+                (self, g, v) => (g, val));
         }
 
         public Constant(int value) : this(Val.Int(value))
@@ -366,13 +392,17 @@ namespace kraka2
         {
             Left = new Node(
                 $"Abs@{Id}:L",   
-                (g, v) =>
+                (self, g, v) =>
                 {
                     switch (v)
                     {
                         case Int i:
                             var g2 = g.BindVal(Right, Val.Int(Math.Abs(i.Value)));
                             return (g2, v);
+                        
+                        case Choice c:
+                            var results = c.Values.Select(vv => self(self, g, vv)).ToArray();
+                            throw new NotImplementedException();
                         
                         case Any _:
                             return (g, g.GetVal(Left));
@@ -384,7 +414,7 @@ namespace kraka2
             
             Right = new Node(
                 $"Abs@{Id}:R",
-                (g, v) =>
+                (self, g, v) =>
                 {
                     switch (v)
                     {
@@ -394,9 +424,58 @@ namespace kraka2
                         }
 
                         case Int i:
-                            throw new InvalidOperationException();
+                            return (g, Val.Never);
                         
                         case Choice c:
+                            var results = c.Values.Select(vv => self(self, g, vv)).ToArray();
+                            
+                            //the machine is given a Choice; it's now up to it to either return a ready-made reply, or
+                            //to propagate through the inner worlds of the choice; the exploration of the innards should
+                            //result in the same? though this then puts quite a responsibility on each machine, that intact Choices and split up ones should result in the same
+                            //
+                            //how could a machine be aware of a Choice? Machines already bind nodes, but now they'd have to delve into other graphs too
+                            //and through delving would receive updated disjuncts
+                            //to form into a new choice
+                            //
+                            //but the choice would be unpacked in one place, and from there propagated separately
+                            //there would be inconsistent awareness of choices
+                            //for it to be consistent, propagations would gather on each node to be processed at once
+                            //though this would also need them to be complete
+                            //incoming propagations would be synchronized, grouped, so that there was an awareness of disjunctions
+                            //each frame would exist in relation to each other frame
+                            //though some propagations would never make it 
+                            //
+                            //each propagation wave would only be processed when we knew it was complete
+                            //we're never aware of the full disjunction anyway, which ia a massive unassailable contextual tree;
+                            //all disjunctions offered are always in a background context - even a Choice will be ultimately within a Choice,
+                            //as all propagations are related
+                            //
+                            //so perfect awareness is surely too much, all we are striving for is partial awareness then;
+                            //and the problem with this is making it consistent and understandable without the qualifications of context
+                            //if a machine is able to make the leap to awareness in a particular circumstance (enabled by memory mechanisms)
+                            //then good for it: but this is going to be a very subtle thing, too subtle to track and to anticipate
+                            //
+                            //if a machine was capable of comprehending the full computing context pertaining to it, this context
+                            //couldn't be simply flattened to a straight choice, rather it would be of much of the graph, all at once,
+                            //as possible given the need to continue the computation. If all machines needed full awareness, too much of the 
+                            //computation would be locked as they all attempted to group and buffer - some machine has to be naive and stupid
+                            //to take the leap or plunge
+                            //
+                            //but - in some narrow cases it is possible to see a fuller picture and to continue; albeit more slowly and with
+                            //more complexity. A simple [1,-1] to a node could be seen and grasped. This being possible in certain cases would
+                            //allow optimisations, but again the problem of extending behaviour in this case is that it would be inconsistent,
+                            //behaviours would be circumstantial and graphs wouldn't be composable.
+                            //
+                            //-----
+                            //
+                            //this being so, it puts our Never in jeopardy - unless we take it as the one abstraction that is always available
+                            //a vanishing awareness of disjunctions - just enough to effectively say 'no' to everything on occasion.
+                            //The minimal necessary awareness.
+                            //
+                            //that is, by establishing awareness to not be all-or-nothing, the presence of Never by itself is no longer a problem -
+                            //just a reasonable lower upper bound
+                            //
+                            
                             throw new NotImplementedException();
 
                         case Any _: {

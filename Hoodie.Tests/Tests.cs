@@ -20,5 +20,22 @@ namespace Hoodie.Tests
             var domain = env.GetDomain(x.Port);
             domain.ShouldNotBeNull();
         }
+        
+        [Test]
+        public void Sandbox()
+        {
+            var graph =
+                from v in Var("v")
+                from _1 in Assert(AreEqual(v, 13))
+                from _2 in Assert(AreEqual(v, 17))
+                select v;
+
+            var (env, x) = graph(Graph.Empty);
+
+            var domain = env.GetDomain(x.Port);
+
+        }
+        
+        
     }
 }

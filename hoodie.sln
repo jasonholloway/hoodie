@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+#
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hoodie.Tests", "Hoodie.Tests\Hoodie.Tests.csproj", "{5A419ADB-C0F5-4926-9FC9-006A442796F5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hoodie", "Hoodie\Hoodie.csproj", "{F4FB34B6-37AD-4760-A002-63709B9C5F84}"
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hoodie.Groups.Tests", "Hoodie.Groups.Tests\Hoodie.Groups.Tests.csproj", "{AD60BCDF-03E1-4956-A69A-68E6952FC5CB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kraka", "Kraka\Kraka.csproj", "{074900DE-687B-4423-962D-AC34C314E04F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Varna", "Varna\Varna.csproj", "{97285B12-7C10-459A-9F5B-B466699B7A84}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,5 +45,9 @@ Global
 		{074900DE-687B-4423-962D-AC34C314E04F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{074900DE-687B-4423-962D-AC34C314E04F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{074900DE-687B-4423-962D-AC34C314E04F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97285B12-7C10-459A-9F5B-B466699B7A84}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97285B12-7C10-459A-9F5B-B466699B7A84}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97285B12-7C10-459A-9F5B-B466699B7A84}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97285B12-7C10-459A-9F5B-B466699B7A84}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
