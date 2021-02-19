@@ -2,6 +2,7 @@ namespace Varna
 {
     public static class Ops
     {
+        public static Exp Never() => new Never();
 
         public static Exp True => new BoolExp(true);
         public static Exp False => new BoolExp(false);
@@ -16,7 +17,6 @@ namespace Varna
 
         public static Exp Bind(Var var, Exp exp)
             => new BindExp(var, exp);
-        
         
         public static Exp And(params Exp[] exps) => null;
         public static Exp Or(params Exp[] exps) => null;

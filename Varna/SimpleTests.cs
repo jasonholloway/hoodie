@@ -26,6 +26,55 @@ namespace Varna
             Assert.That(or.Right.Get("x").Raw(), Is.EqualTo(9));
         }
         
+        [Test]
+        public void Disjunctions_BubbleBinds()
+        {
+            var x = new Var("x");
+            var y = new Var("y");
+
+            var exp = (x == 3 & y == 1 | x == 3 & y == 2);
+            var scope = Reader.Read(exp).Complete();
+            
+            Assert.That(scope.Exp, Is.TypeOf<OrExp>());
+
+            var or = (OrExp)scope.Exp;
+            Assert.That(or.Left.Exp, Is.TypeOf<True>());
+            Assert.That(or.Left.Get("x").Raw(), Is.EqualTo(3));
+            Assert.That(or.Left.Get("y").Raw(), Is.EqualTo(1));
+            
+            Assert.That(or.Right.Exp, Is.TypeOf<True>());
+            Assert.That(or.Right.Get("x").Raw(), Is.EqualTo(3));
+            Assert.That(or.Right.Get("y").Raw(), Is.EqualTo(2));
+            
+            // only common binds bubble into the or
+            Assert.That(scope.Get("x").Raw(), Is.EqualTo(3));
+            Assert.That(scope.Get("y").Raw(), Is.Null);
+        }
+        
+        [Test]
+        public void Disjunctions_SimplifiesNevers()
+        {
+            var x = new Var("x");
+
+            var exp = (x == 3 & x == 1 | x == 4 & x == 4);
+            var scope = Reader.Read(exp).Complete();
+            
+            Assert.That(scope.Exp, Is.TypeOf<True>());
+            // Assert.That(scope.Get("x").Raw(), Is.EqualTo(4));
+        }
+        
+        [Test]
+        public void BadConjunction()
+        {
+            var x = new Var("x");
+
+            var exp = (x == 3 & x == 1);
+            var scope = Reader.Read(exp).Complete();
+            
+            Assert.That(scope.Exp, Is.TypeOf<Never>());
+            Assert.That(scope.Binds, Is.Empty);
+        }
+        
         
         [Test]
         public void IfThen()
@@ -76,6 +125,10 @@ namespace Varna
             var result = Reader.Read(exp1);
             Assert.That(result.Get("x").Raw(), Is.EqualTo(7));
         }
+        
+        // There's a problem with going depth first: it's thorough but inefficient
+        // - could do lazy Ands
+        // - read by iterations
 
         [Test]
         public void Conjunction()
@@ -85,7 +138,7 @@ namespace Varna
 
             var exp1 = (x == 7 & y == 3);
 
-            var result = Reader.Read(exp1);
+            var result = Reader.Read(exp1).Complete();
             Assert.That(result.Get("x").Raw(), Is.EqualTo(7));
             Assert.That(result.Get("y").Raw(), Is.EqualTo(3));
         }
