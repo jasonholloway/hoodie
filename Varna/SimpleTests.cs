@@ -3,6 +3,8 @@ using NUnit.Framework;
 
 namespace Varna
 {
+    using static Ops;
+    
     class SimpleTests
     {
         [Test]
@@ -52,6 +54,23 @@ namespace Varna
         }
         
         [Test]
+        public void Disjunctions_Flatten()
+        {
+            var x = new Var("x");
+            var y = new Var("y");
+
+            var exp = ((x == 1 | (1 | 2)) | (x == (1 | 2)) | x == 1 & (x == 1));
+            var scope = Reader.Read(exp).Complete();
+            
+            Assert.That(scope.Exp, Is.TypeOf<OrExp>());
+            
+            var or = (OrExp)scope.Exp;
+            Assert.That(scope.Get("x").Raw(), Is.EqualTo(3));
+            
+            // TODO: test that only one level of Ors
+        }
+        
+        [Test]
         public void Disjunctions_SimplifiesNevers()
         {
             var x = new Var("x");
@@ -69,6 +88,18 @@ namespace Varna
             var x = new Var("x");
 
             var exp = (x == 3 & x == 1);
+            var scope = Reader.Read(exp).Complete();
+            
+            Assert.That(scope.Exp, Is.TypeOf<Never>());
+            Assert.That(scope.Binds, Is.Empty);
+        }
+        
+        [Test]
+        public void Conjunction_Annihilable()
+        {
+            var x = new Var("x");
+
+            var exp = (x == 3 & Never());
             var scope = Reader.Read(exp).Complete();
             
             Assert.That(scope.Exp, Is.TypeOf<Never>());

@@ -70,7 +70,10 @@ namespace Varna
         private static Scope Read(Scope s, AndExp x)
         {
             var left = Read(x.Left.Exp);
+            if (left.Exp is Never) return Never();
+            
             var right = Read(x.Right.Exp);
+            if (right.Exp is Never) return Never();
 
             switch (left.Exp, right.Exp)
             {
