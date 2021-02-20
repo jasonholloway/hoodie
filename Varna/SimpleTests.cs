@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using System.Linq;
 using NUnit.Framework;
 
 namespace Varna
@@ -20,12 +20,11 @@ namespace Varna
 
             // and branches should be digested
             var or = (OrExp)scope.Exp;
-            Assert.That(or.Left.Exp, Is.TypeOf<True>());
-            Assert.That(or.Right.Exp, Is.TypeOf<True>());
+            Assert.That(or.Scopes.Select(s => s.Exp), Is.All.TypeOf<True>());
             
             // and binds bubbled
-            Assert.That(or.Left.Get("x").Raw(), Is.EqualTo(3));
-            Assert.That(or.Right.Get("x").Raw(), Is.EqualTo(9));
+            Assert.That(or.Scopes.Select(s => s.Get("x").Raw()), 
+                Has.One.EqualTo(3) & Has.One.EqualTo(9));
         }
         
         [Test]
@@ -40,17 +39,18 @@ namespace Varna
             Assert.That(scope.Exp, Is.TypeOf<OrExp>());
 
             var or = (OrExp)scope.Exp;
-            Assert.That(or.Left.Exp, Is.TypeOf<True>());
-            Assert.That(or.Left.Get("x").Raw(), Is.EqualTo(3));
-            Assert.That(or.Left.Get("y").Raw(), Is.EqualTo(1));
             
-            Assert.That(or.Right.Exp, Is.TypeOf<True>());
-            Assert.That(or.Right.Get("x").Raw(), Is.EqualTo(3));
-            Assert.That(or.Right.Get("y").Raw(), Is.EqualTo(2));
+            Assert.That(or.Scopes.Select(s => s.Exp), Is.All.TypeOf<True>());
+            
+            Assert.That(or.Scopes, Has.One.Matches<Scope>(s => 
+                s.Get("x").Raw().Equals(3) && s.Get("y").Raw().Equals(1)));
+            
+            Assert.That(or.Scopes, Has.One.Matches<Scope>(s => 
+                s.Get("x").Raw().Equals(3) && s.Get("y").Raw().Equals(2)));
             
             // only common binds bubble into the or
             Assert.That(scope.Get("x").Raw(), Is.EqualTo(3));
-            Assert.That(scope.Get("y").Raw(), Is.Null);
+            Assert.That(scope.Get("y").Exp, Is.TypeOf<True>());
         }
         
         [Test]
@@ -60,12 +60,13 @@ namespace Varna
             var scope = Reader.Read(exp).Complete();
             
             Assert.That(scope.Exp, Is.TypeOf<OrExp>());
-            var or1 = (OrExp)scope.Exp;
-            Assert.That(or1.Left.Exp, Is.TypeOf<Int>());
-            Assert.That(or1.Left.Raw(), Is.EqualTo(1));
+            var or = (OrExp)scope.Exp;
             
-            Assert.That(or1.Right.Exp, Is.TypeOf<Int>());
-            Assert.That(or1.Right.Raw(), Is.EqualTo(2));
+            Assert.That(or.Scopes.Select(s => s.Exp), 
+                Is.All.TypeOf<Int>());
+            
+            Assert.That(or.Scopes.Select(s => s.Raw()), 
+                Has.One.EqualTo(1) & Has.One.EqualTo(2));
         }
         
         [Test]
@@ -75,16 +76,13 @@ namespace Varna
             var scope = Reader.Read(exp).Complete();
             
             Assert.That(scope.Exp, Is.TypeOf<OrExp>());
-            var or1 = (OrExp)scope.Exp;
-            Assert.That(or1.Right.Exp, Is.TypeOf<Int>());
-            Assert.That(or1.Right.Raw(), Is.EqualTo(3));
+            var or = (OrExp)scope.Exp;
             
-            Assert.That(or1.Left.Exp, Is.TypeOf<OrExp>());
-            var or2 = (OrExp)or1.Left.Exp;
-            Assert.That(or2.Left.Exp, Is.TypeOf<Int>());
-            Assert.That(or2.Left.Raw(), Is.EqualTo(2));
-            Assert.That(or2.Right.Exp, Is.TypeOf<Int>());
-            Assert.That(or2.Right.Raw(), Is.EqualTo(1));
+            Assert.That(or.Scopes.Select(s => s.Exp), 
+                Is.All.TypeOf<Int>());
+            
+            Assert.That(or.Scopes.Select(s => s.Raw()), 
+                Has.One.EqualTo(1) & Has.One.EqualTo(2) & Has.One.EqualTo(3));
         }
         
         [Test]
@@ -94,37 +92,36 @@ namespace Varna
             var scope = Reader.Read(exp).Complete();
             
             Assert.That(scope.Exp, Is.TypeOf<OrExp>());
-            var or1 = (OrExp)scope.Exp;
-            Assert.That(or1.Right.Exp, Is.TypeOf<Int>());
-            Assert.That(or1.Right.Raw(), Is.EqualTo(3));
+            var or = (OrExp)scope.Exp;
             
-            Assert.That(or1.Left.Exp, Is.TypeOf<OrExp>());
-            var or2 = (OrExp)or1.Left.Exp;
-            Assert.That(or2.Left.Exp, Is.TypeOf<Int>());
-            Assert.That(or2.Left.Raw(), Is.EqualTo(2));
-            Assert.That(or2.Right.Exp, Is.TypeOf<Int>());
-            Assert.That(or2.Right.Raw(), Is.EqualTo(1));
+            Assert.That(or.Scopes.Select(s => s.Exp), 
+                Is.All.TypeOf<Int>());
+            
+            Assert.That(or.Scopes.Select(s => s.Raw()), 
+                Has.One.EqualTo(1) & Has.One.EqualTo(2) & Has.One.EqualTo(3));
         }
+        
         
         [Test]
         public void Disjunctions_Flatten()
         {
             var x = new Var("x");
             var y = new Var("y");
-
-            var exp = ((x == (1 | (1 | 2))) | (x == (1 | 2)) | x == 1 & (x == 1));
+        
+            var exp = ((x == ((Exp)1 | ((Exp)1 | 2))) | (x == ((Exp)1 | 2)) | x == 1 & (x == 1));
             var scope = Reader.Read(exp).Complete();
             
             Assert.That(scope.Exp, Is.TypeOf<OrExp>());
-            
             var or = (OrExp)scope.Exp;
-            Assert.That(scope.Get("x").Raw(), Is.Null);
-
-            Assert.That(or.Left.Exp, Is.TypeOf<True>());
-            Assert.That(or.Left.Get("x").Raw(), Is.EqualTo(1));
             
-            Assert.That(or.Right.Exp, Is.TypeOf<True>());
-            Assert.That(or.Right.Get("x").Raw(), Is.EqualTo(2));
+            Assert.That(or.Scopes, 
+                Has.Count.EqualTo(2));
+            
+            Assert.That(or.Scopes.Select(s => s.Exp), 
+                Is.All.TypeOf<True>());
+
+            Assert.That(or.Scopes.Select(s => s.Get("x").Raw()),
+                Has.One.EqualTo(1) & Has.One.EqualTo(2));
         }
 
 
@@ -162,7 +159,7 @@ namespace Varna
             var scope = Reader.Read(exp).Complete();
             
             Assert.That(scope.Exp, Is.TypeOf<Never>());
-            Assert.That(scope.Binds, Is.Empty);
+            Assert.That(scope.Binds, Is.Null);
         }
         
         [Test]
@@ -174,7 +171,7 @@ namespace Varna
             var scope = Reader.Read(exp).Complete();
             
             Assert.That(scope.Exp, Is.TypeOf<Never>());
-            Assert.That(scope.Binds, Is.Empty);
+            Assert.That(scope.Binds, Is.Null);
         }
         
         

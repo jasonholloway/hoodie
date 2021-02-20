@@ -5,8 +5,8 @@ namespace Varna
 {
     internal class ScopeComparer : IEqualityComparer<Scope>, IEqualityComparer<Exp>
     {
-        public static IEqualityComparer<Exp> Exp = new ScopeComparer();
-        public static IEqualityComparer<Scope> Scope = new ScopeComparer();
+        public static readonly IEqualityComparer<Exp> Exp = new ScopeComparer();
+        public static readonly IEqualityComparer<Scope> Scope = new ScopeComparer();
             
         public bool Equals(Scope x, Scope y)
         {
@@ -14,7 +14,7 @@ namespace Varna
             if (ReferenceEquals(x, null)) return false;
             if (ReferenceEquals(y, null)) return false;
             if (x.GetType() != y.GetType()) return false;
-            return Equals(x.Binds, y.Binds) && Equals(x.Exp, y.Exp) && Equals(x.More, y.More);
+            return x.Binds.Equals(y.Binds) && Equals(x.Exp, y.Exp) && Equals(x.More, y.More);
         }
 
         public int GetHashCode(Scope obj)
@@ -28,11 +28,17 @@ namespace Varna
             => x.GetType() == y.GetType()
                && _Equals((dynamic)x, (dynamic)y);
 
+        bool _Equals(True l, True r)
+            => true;
+
         bool _Equals(Int l, Int r)
             => l.Value == r.Value;
             
         bool _Equals(Var l, Var r)
             => l.Name == r.Name;
+        
+        bool _Equals(OrExp l, OrExp r)
+            => l.Scopes.Equals(r.Scopes);
 
         bool _Equals(BinaryExp l, BinaryExp r)
             => Equals(l.Left, r.Left) 
@@ -42,6 +48,9 @@ namespace Varna
         public int GetHashCode(Exp x)
             => _GetHashCode((dynamic)x);
 
+        int _GetHashCode(True x)
+            => typeof(True).GetHashCode();
+
         int _GetHashCode(Int x)
             => HashCode.Combine(
                 x.GetType(), 
@@ -50,7 +59,12 @@ namespace Varna
         int _GetHashCode(Var x)
             => HashCode.Combine(
                 x.GetType(), 
-                x.Name); 
+                x.Name);
+
+        int _GetHashCode(OrExp x)
+            => HashCode.Combine(
+                typeof(OrExp),
+                x.Scopes);
             
         int _GetHashCode(BinaryExp obj)
             => HashCode.Combine(

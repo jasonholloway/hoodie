@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace Varna
 {
@@ -113,11 +116,22 @@ namespace Varna
         {}
     }
     
-    public class OrExp : BinaryExp
+    public class OrExp : Exp
     {
-        public OrExp(Scope left, Scope right) 
-            : base(left, right)
-        {}
+        public readonly ImmutableHashSet<Scope> Scopes;
+
+        private OrExp(ImmutableHashSet<Scope> scopes)
+        {
+            Scopes = scopes;
+        }
+        
+        public OrExp(IEnumerable<Scope> scopes)
+            : this(scopes.ToImmutableHashSet(ScopeComparer.Scope))
+        { }
+
+        public OrExp(params Scope[] scopes)
+            : this(scopes.AsEnumerable())
+        { }
     }
     
     public class BinaryExp : Exp

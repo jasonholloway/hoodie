@@ -17,65 +17,69 @@ namespace Varna
         private static Scope Read(Scope s, Var _)
             => s;
         
-        private static Scope Read(Scope s, OrExp x)
+        private static Scope Read(Scope _, OrExp x)
         {
-            var left2 = Read(x.Left.Exp);
-            var right2 = Read(x.Right.Exp);
-            
-            switch (left2.Exp, right2.Exp)
-            {
-                case (Never _, Exp _): return right2;
-                case (Exp _, Never _): return left2;
-                default:
+            var scopes2 = x.Scopes
+                .Select(Read)
+                .SelectMany(s => s.Exp switch
                 {
-                    return DedupeOrs(left2, right2);
-                }
+                    OrExp y => y.Scopes.AsEnumerable(),
+                    _ => new[] { s }
+                })
+                .Where(s => s.Exp is not Never)
+                .ToArray();
+
+            return scopes2.Length switch
+            {
+                0 => Never(),
+                1 => scopes2.Single(),
+                _ => new Scope(new OrExp(scopes2), InCommon(scopes2.Select(s => s.Binds)))
             };
         }
 
-        private static Scope DedupeOrs(Scope left, Scope right)
-        {
-            if (right.Exp is OrExp innerRight)
-            {
-                if (ScopeComparer.Scope.Equals(left, innerRight.Left))
-                {
-                    return Repack(left, innerRight.Right);
-                }
-                else if(ScopeComparer.Scope.Equals(left, innerRight.Right))
-                {
-                    return Repack(left, innerRight.Left);
-                }
-            }
-                    
-            if (left.Exp is OrExp innerLeft)
-            {
-                if (ScopeComparer.Scope.Equals(right, innerLeft.Left))
-                {
-                    return Repack(innerLeft.Right, right);
-                }
-                else if(ScopeComparer.Scope.Equals(right, innerLeft.Right))
-                {
-                    return Repack(innerLeft.Left, right);
-                }
-            }
-
-            return Repack(left, right);
-            
-            Scope Repack(Scope l, Scope r)
-                => new(new OrExp(l, r), InCommon(l.Binds, r.Binds));
-        }
+        // private static Scope DedupeOrs(Scope left, Scope right)
+        // {
+        //     if (right.Exp is OrExp innerRight)
+        //     {
+        //         if (ScopeComparer.Scope.Equals(left, innerRight.Left))
+        //         {
+        //             return Repack(left, innerRight.Right);
+        //         }
+        //         else if(ScopeComparer.Scope.Equals(left, innerRight.Right))
+        //         {
+        //             return Repack(left, innerRight.Left);
+        //         }
+        //     }
+        //             
+        //     if (left.Exp is OrExp innerLeft)
+        //     {
+        //         if (ScopeComparer.Scope.Equals(right, innerLeft.Left))
+        //         {
+        //             return Repack(innerLeft.Right, right);
+        //         }
+        //         else if(ScopeComparer.Scope.Equals(right, innerLeft.Right))
+        //         {
+        //             return Repack(innerLeft.Left, right);
+        //         }
+        //     }
+        //
+        //     return Repack(left, right);
+        //     
+        //     Scope Repack(Scope l, Scope r)
+        //         => new(new OrExp(l, r), InCommon(l.Binds, r.Binds));
+        // }
         
-        private static Scope DedupeOrs(Scope s)
-        {
-            if (s.Exp is OrExp x)
-            {
-                return DedupeOrs(x.Left, x.Right);
-            }
+        // private static Scope DedupeOrs(Scope s)
+        // {
+        //     if (s.Exp is OrExp x)
+        //     {
+        //         return DedupeOrs(x.Left, x.Right);
+        //     }
+        //
+        //     return s;
+        // }
 
-            return s;
-        }
-
-        private static Scope Read(Scope s, EqualsExp x)
+        private static Scope Read(Scope scope, EqualsExp x)
         {
             var left2 = Read(x.Left.Exp);
             var right2 = Read(x.Right.Exp);
@@ -85,12 +89,9 @@ namespace Varna
                 case (Var var, Exp exp):
                     if (exp is OrExp or)
                     {
-                        //if it is an or, then we can distribute the assignment across the two legs
                         return new Scope(
-                            new OrExp(
-                                Read(new EqualsExp(var, or.Left)), 
-                                Read(new EqualsExp(var, or.Right))),
-                            s.Binds //!!!!
+                            new OrExp(or.Scopes.Select(s => Read(new EqualsExp(var, s)))),
+                            scope.Binds //!!!!
                         );
                     }
                     else
@@ -98,8 +99,8 @@ namespace Varna
                         return new Scope(
                             new True(),
                             x.Left.Binds
-                                .AddRange(x.Right.Binds)
-                                .Add(var.Name, exp)
+                                .Combine(x.Right.Binds)?
+                                .Set(var.Name, exp)
                         );
                     }
                 
@@ -129,28 +130,7 @@ namespace Varna
             };
 
             Scope Return(Exp val)
-            {
-                var binds = left.Binds;
-
-                foreach (var (k, rv) in right.Binds)
-                {
-                    if (binds.TryGetValue(k, out var lv))
-                    {
-                        if (lv is LeafExp le && rv is LeafExp re && le.Raw.Equals(re.Raw))
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            return Never();
-                        }
-                    }
-                    
-                    binds = binds.Add(k, rv);
-                }
-                
-                return new Scope(val, binds);
-            }
+                => new Scope(val, left.Binds.Combine(right.Binds));
         }
     }
 }
