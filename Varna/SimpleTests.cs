@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Immutable;
 using NUnit.Framework;
 
 namespace Varna
@@ -54,22 +54,93 @@ namespace Varna
         }
         
         [Test]
+        public void Disjunctions_Flatten_SuperSimple()
+        {
+            var exp = (Exp)1 | (Exp)2 | (Exp)2 | (Exp)1 | (Exp)1 | (Exp)2;
+            var scope = Reader.Read(exp).Complete();
+            
+            Assert.That(scope.Exp, Is.TypeOf<OrExp>());
+            var or1 = (OrExp)scope.Exp;
+            Assert.That(or1.Left.Exp, Is.TypeOf<Int>());
+            Assert.That(or1.Left.Raw(), Is.EqualTo(1));
+            
+            Assert.That(or1.Right.Exp, Is.TypeOf<Int>());
+            Assert.That(or1.Right.Raw(), Is.EqualTo(2));
+        }
+        
+        [Test]
+        public void Disjunctions_Flatten_SimpleButOutOfOrder()
+        {
+            var exp = (Exp)1 | (Exp)2 | (Exp)1 | (Exp)3;
+            var scope = Reader.Read(exp).Complete();
+            
+            Assert.That(scope.Exp, Is.TypeOf<OrExp>());
+            var or1 = (OrExp)scope.Exp;
+            Assert.That(or1.Right.Exp, Is.TypeOf<Int>());
+            Assert.That(or1.Right.Raw(), Is.EqualTo(3));
+            
+            Assert.That(or1.Left.Exp, Is.TypeOf<OrExp>());
+            var or2 = (OrExp)or1.Left.Exp;
+            Assert.That(or2.Left.Exp, Is.TypeOf<Int>());
+            Assert.That(or2.Left.Raw(), Is.EqualTo(2));
+            Assert.That(or2.Right.Exp, Is.TypeOf<Int>());
+            Assert.That(or2.Right.Raw(), Is.EqualTo(1));
+        }
+        
+        [Test]
+        public void Disjunctions_Flatten_SimpleButDeeplyOutOfOrder()
+        {
+            var exp = (Exp) 1 | (Exp) 2 | (Exp) 1 | (Exp) 3 | (Exp) 2;
+            var scope = Reader.Read(exp).Complete();
+            
+            Assert.That(scope.Exp, Is.TypeOf<OrExp>());
+            var or1 = (OrExp)scope.Exp;
+            Assert.That(or1.Right.Exp, Is.TypeOf<Int>());
+            Assert.That(or1.Right.Raw(), Is.EqualTo(3));
+            
+            Assert.That(or1.Left.Exp, Is.TypeOf<OrExp>());
+            var or2 = (OrExp)or1.Left.Exp;
+            Assert.That(or2.Left.Exp, Is.TypeOf<Int>());
+            Assert.That(or2.Left.Raw(), Is.EqualTo(2));
+            Assert.That(or2.Right.Exp, Is.TypeOf<Int>());
+            Assert.That(or2.Right.Raw(), Is.EqualTo(1));
+        }
+        
+        [Test]
         public void Disjunctions_Flatten()
         {
             var x = new Var("x");
             var y = new Var("y");
 
-            var exp = ((x == 1 | (1 | 2)) | (x == (1 | 2)) | x == 1 & (x == 1));
+            var exp = ((x == (1 | (1 | 2))) | (x == (1 | 2)) | x == 1 & (x == 1));
             var scope = Reader.Read(exp).Complete();
             
             Assert.That(scope.Exp, Is.TypeOf<OrExp>());
             
             var or = (OrExp)scope.Exp;
-            Assert.That(scope.Get("x").Raw(), Is.EqualTo(3));
+            Assert.That(scope.Get("x").Raw(), Is.Null);
+
+            Assert.That(or.Left.Exp, Is.TypeOf<True>());
+            Assert.That(or.Left.Get("x").Raw(), Is.EqualTo(1));
             
-            // TODO: test that only one level of Ors
+            Assert.That(or.Right.Exp, Is.TypeOf<True>());
+            Assert.That(or.Right.Get("x").Raw(), Is.EqualTo(2));
         }
-        
+
+
+        [Test]
+        public void CompareTest()
+        {
+            var x = new Var("x");
+            var y = new Var("y");
+
+            var s1 = x == 3 & y == 2;
+            var s2 = x == 3 & y == 2;
+            
+            Assert.That(s1, Is.EqualTo(s2).Using(ScopeComparer.Exp));
+        }
+
+
         [Test]
         public void Disjunctions_SimplifiesNevers()
         {

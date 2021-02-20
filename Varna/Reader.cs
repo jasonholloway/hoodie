@@ -28,11 +28,51 @@ namespace Varna
                 case (Exp _, Never _): return left2;
                 default:
                 {
-                    return new Scope(
-                        new OrExp(left2, right2),
-                        InCommon(left2.Binds, right2.Binds));
+                    return DedupeOrs(left2, right2);
                 }
             };
+        }
+
+        private static Scope DedupeOrs(Scope left, Scope right)
+        {
+            if (right.Exp is OrExp innerRight)
+            {
+                if (ScopeComparer.Scope.Equals(left, innerRight.Left))
+                {
+                    return Repack(left, innerRight.Right);
+                }
+                else if(ScopeComparer.Scope.Equals(left, innerRight.Right))
+                {
+                    return Repack(left, innerRight.Left);
+                }
+            }
+                    
+            if (left.Exp is OrExp innerLeft)
+            {
+                if (ScopeComparer.Scope.Equals(right, innerLeft.Left))
+                {
+                    return Repack(innerLeft.Right, right);
+                }
+                else if(ScopeComparer.Scope.Equals(right, innerLeft.Right))
+                {
+                    return Repack(innerLeft.Left, right);
+                }
+            }
+
+            return Repack(left, right);
+            
+            Scope Repack(Scope l, Scope r)
+                => new(new OrExp(l, r), InCommon(l.Binds, r.Binds));
+        }
+        
+        private static Scope DedupeOrs(Scope s)
+        {
+            if (s.Exp is OrExp x)
+            {
+                return DedupeOrs(x.Left, x.Right);
+            }
+
+            return s;
         }
 
         private static Scope Read(Scope s, EqualsExp x)
